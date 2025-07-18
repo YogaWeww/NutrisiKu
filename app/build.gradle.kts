@@ -56,4 +56,31 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    // --- JETPACK COMPOSE ---
+    // Dependency utama untuk Jetpack Compose.
+    implementation(libs.androidx.activity.compose)
+    // Bill of Materials (BOM) untuk memastikan semua library Compose menggunakan versi yang kompatibel.
+    implementation(platform(libs.androidx.compose.bom))
+    // Library untuk membangun UI.
+    implementation(libs.androidx.ui)
+    // Library untuk grafis, seperti Color, Shape, dll.
+    implementation(libs.androidx.ui.graphics)
+    // Library untuk melihat preview Composable di Android Studio.
+    implementation(libs.androidx.ui.tooling.preview)
+    // Library untuk komponen Material Design 3 (Button, Card, Scaffold, dll).
+    implementation(libs.androidx.material3)
+
+    // --- MATERIAL ICONS (FIX) ---
+    // Menambahkan dependency untuk ikon-ikon tambahan seperti CalendarToday, dll.
+    implementation(libs.androidx.compose.material.icons.extended)
+
+    // --- DEPENDENCIES LAINNYA UNTUK TESTING ---
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.ui.test.junit4)
+    debugImplementation(libs.androidx.ui.tooling)
+    debugImplementation(libs.androidx.ui.test.manifest)
 }
