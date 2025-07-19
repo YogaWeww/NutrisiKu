@@ -9,10 +9,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.nutrisiku.ui.navigation.Screen
+import com.example.nutrisiku.ui.screen.DetectionResultScreen
+import com.example.nutrisiku.ui.screen.DetectionScreen
 import com.example.nutrisiku.ui.screen.EditProfileScreen
 import com.example.nutrisiku.ui.screen.HistoryDetailScreen
 import com.example.nutrisiku.ui.screen.HistoryScreen
 import com.example.nutrisiku.ui.screen.HomeScreen
+import com.example.nutrisiku.ui.screen.ManualInputScreen
 import com.example.nutrisiku.ui.screen.OnboardingScreen
 import com.example.nutrisiku.ui.screen.ProfileInputScreen
 import com.example.nutrisiku.ui.screen.ProfileScreen
@@ -23,17 +26,14 @@ fun NutrisiKuApp(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController()
 ) {
-    // NavHost adalah komponen utama yang mengatur navigasi
     NavHost(
         navController = navController,
-        startDestination = Screen.Splash.route, // Aplikasi dimulai dari Splash Screen
+        startDestination = Screen.Splash.route,
         modifier = modifier
     ) {
-        // Setiap 'composable' mendefinisikan satu layar dalam grafik navigasi
         composable(Screen.Splash.route) {
             SplashScreen(
                 onTimeout = {
-                    // Setelah timeout, hapus splash dari back stack dan pindah ke onboarding
                     navController.navigate(Screen.Onboarding.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
                     }
@@ -54,7 +54,6 @@ fun NutrisiKuApp(
         composable(Screen.ProfileInput.route) {
             ProfileInputScreen(
                 onConfirmClick = {
-                    // Setelah konfirmasi profil, pindah ke Home dan bersihkan back stack
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.ProfileInput.route) { inclusive = true }
                     }
@@ -64,7 +63,6 @@ fun NutrisiKuApp(
 
         composable(Screen.Home.route) {
             HomeScreen(
-//              Teruskan aksi navigasi ke HomeScreen
                 navigateToProfile = { navController.navigate(Screen.Profile.route) },
                 navigateToDetection = { navController.navigate(Screen.Detection.route) },
                 navigateToHistory = { navController.navigate(Screen.History.route) }
@@ -74,14 +72,22 @@ fun NutrisiKuApp(
         composable(Screen.Profile.route) {
             ProfileScreen(
                 onEditProfileClick = { navController.navigate(Screen.EditProfile.route) },
-                onBackClick = { navController.navigateUp() }
+                onBackClick = { navController.navigateUp() },
+                // Menambahkan parameter navigasi untuk BottomNavBar
+                navigateToHome = { navController.navigate(Screen.Home.route) },
+                navigateToDetection = { navController.navigate(Screen.Detection.route) },
+                navigateToHistory = { navController.navigate(Screen.History.route) }
             )
         }
 
         composable(Screen.EditProfile.route) {
             EditProfileScreen(
                 onBackClick = { navController.navigateUp() },
-                onSaveClick = { navController.navigateUp() } // Kembali ke profil setelah simpan
+                onSaveClick = { navController.navigateUp() },
+                // Menambahkan parameter navigasi untuk BottomNavBar
+                navigateToHome = { navController.navigate(Screen.Home.route) },
+                navigateToDetection = { navController.navigate(Screen.Detection.route) },
+                navigateToHistory = { navController.navigate(Screen.History.route) }
             )
         }
 
@@ -89,9 +95,11 @@ fun NutrisiKuApp(
             HistoryScreen(
                 onBackClick = { navController.navigateUp() },
                 onHistoryItemClick = { historyId ->
-                    // Navigasi ke detail dengan mengirim ID
                     navController.navigate(Screen.HistoryDetail.createRoute(historyId))
-                }
+                },
+                // Menambahkan parameter navigasi untuk BottomNavBar
+                navigateToHome = { navController.navigate(Screen.Home.route) },
+                navigateToDetection = { navController.navigate(Screen.Detection.route) }
             )
         }
 
@@ -99,13 +107,45 @@ fun NutrisiKuApp(
             route = Screen.HistoryDetail.route,
             arguments = listOf(navArgument("historyId") { type = NavType.IntType }),
         ) {
-            // Ambil argumen ID (untuk saat ini belum digunakan, tapi strukturnya sudah siap)
             val id = it.arguments?.getInt("historyId") ?: -1
             HistoryDetailScreen(
-                onBackClick = { navController.navigateUp(), },
+                onBackClick = { navController.navigateUp() },
+                // Menambahkan parameter navigasi untuk BottomNavBar
+                navigateToHome = { navController.navigate(Screen.Home.route) },
+                navigateToDetection = { navController.navigate(Screen.Detection.route) },
+                navigateToHistory = { navController.navigate(Screen.History.route) }
             )
         }
 
-        // ... Tambahkan composable untuk alur deteksi
+        composable(Screen.Detection.route) {
+            DetectionScreen(
+                onBackClick = { navController.navigateUp() },
+                onCameraClick = { navController.navigate(Screen.DetectionResult.route) },
+                onGalleryClick = { navController.navigate(Screen.DetectionResult.route) },
+                onManualClick = { navController.navigate(Screen.ManualInput.route) }
+            )
+        }
+
+        composable(Screen.DetectionResult.route) {
+            DetectionResultScreen(
+                onBackClick = { navController.navigateUp() },
+                onSaveClick = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(Screen.ManualInput.route) {
+            ManualInputScreen(
+                onBackClick = { navController.navigateUp() },
+                onSaveClick = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
+                    }
+                }
+            )
+        }
     }
 }

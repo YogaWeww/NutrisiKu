@@ -27,7 +27,9 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.nutrisiku.ui.navigation.Screen
 import com.example.nutrisiku.ui.screen.components.NutrisiKuBottomNavBar
+
 
 @Composable
 fun HomeScreen(
@@ -36,11 +38,15 @@ fun HomeScreen(
     navigateToHistory: () -> Unit
 ) {
     Scaffold(
-        bottomBar = { NutrisiKuBottomNavBar(
-            onHomeClick = { /* Navigasi ke Home */ },
-            onDetectionClick = { navigateToDetection },
-            onHistoryClick = { navigateToHistory }
-        ) }
+        bottomBar = {
+            NutrisiKuBottomNavBar(
+                // PERBAIKAN: Beri tahu BottomNavBar bahwa rute saat ini adalah "home"
+                currentRoute = Screen.Home.route,
+                onHomeClick = { /* Kita sudah di Home, tidak perlu aksi */ },
+                onDetectionClick = navigateToDetection,
+                onHistoryClick = navigateToHistory
+            )
+        }
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -51,22 +57,25 @@ fun HomeScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             Spacer(modifier = Modifier.height(16.dp))
-            HeaderSection(name = "Yoga", onProfileClick = { navigateToProfile })
+            HeaderSection(name = "Yoga", onProfileClick = navigateToProfile)
             Spacer(modifier = Modifier.height(24.dp))
             DateCard()
             Spacer(modifier = Modifier.height(16.dp))
             CalorieCard(consumed = 750, total = 1500)
             Spacer(modifier = Modifier.height(16.dp))
-            DetectNowButton(onClick = { navigateToDetection })
+            DetectNowButton(onClick = navigateToDetection)
             Spacer(modifier = Modifier.height(24.dp))
-            HistorySection(navigateToHistory)
+            HistorySection(onSeeAllClick = navigateToHistory)
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
 
 @Composable
-fun HeaderSection(name: String, onProfileClick: () -> Unit) {
+fun HeaderSection(
+    name: String,
+    onProfileClick: () -> Unit
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -205,11 +214,10 @@ fun DetectNowButton(onClick: () -> Unit) {
         )
     }
 }
-
+// ... (Sisa Composable lain di HomeScreen seperti HeaderSection, CalorieCard, dll. tetap sama)
+// Pastikan HistorySection dimodifikasi untuk menerima onSeeAllClick
 @Composable
-fun HistorySection(
-    navigateToHistory: () -> Unit
-) {
+fun HistorySection(onSeeAllClick: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = "Riwayat Deteksi:",
@@ -217,10 +225,10 @@ fun HistorySection(
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(12.dp))
-        HistoryItemCard()
+        HistoryItemCard() // Asumsi Composable ini ada di file yang sama atau diimpor
         Spacer(modifier = Modifier.height(12.dp))
         OutlinedButton(
-            onClick = { navigateToHistory },
+            onClick = onSeeAllClick,
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier
                 .fillMaxWidth()

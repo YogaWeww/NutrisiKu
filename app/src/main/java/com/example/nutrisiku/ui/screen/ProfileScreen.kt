@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.nutrisiku.ui.navigation.Screen
 import com.example.nutrisiku.ui.screen.components.NutrisiKuBottomNavBar
 import com.example.nutrisiku.ui.screen.components.ActivityLevelDropdown
 import com.example.nutrisiku.ui.screen.components.GenderDropdown
@@ -40,7 +41,7 @@ fun ProfileScreen(
     onBackClick: () -> Unit, // Mungkin tidak diperlukan jika navigasi utama via BottomBar
     navigateToHome: () -> Unit, // Tambahkan ini
     navigateToDetection: () -> Unit, // Tambahkan ini
-    navugateToHistory: () -> Unit // Tambahkan ini
+    navigateToHistory: () -> Unit // Tambahkan ini
 ) {
     Scaffold(
         topBar = {
@@ -54,9 +55,10 @@ fun ProfileScreen(
             )
         },
         bottomBar = { NutrisiKuBottomNavBar(
+            currentRoute = Screen.Profile.route,
             onHomeClick = navigateToHome,
             onDetectionClick = navigateToDetection,
-            onHistoryClick = navugateToHistory
+            onHistoryClick = navigateToHistory
         ) }
     ) { innerPadding ->
         Column(
@@ -198,7 +200,7 @@ fun EditProfileScreen(
     onSaveClick: () -> Unit,
     navigateToHome: () -> Unit,
     navigateToDetection: () -> Unit,
-    navugateToHistory: () -> Unit
+    navigateToHistory: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -212,9 +214,10 @@ fun EditProfileScreen(
             )
         },
         bottomBar = { NutrisiKuBottomNavBar(
+            currentRoute = Screen.EditProfile.route,
             onHomeClick = navigateToHome,
             onDetectionClick = navigateToDetection,
-            onHistoryClick = navugateToHistory
+            onHistoryClick = navigateToHistory
         ) }
     ) { innerPadding ->
         Column(

@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.nutrisiku.R
+import com.example.nutrisiku.ui.navigation.Screen
 import com.example.nutrisiku.ui.screen.components.DetectedItem
 import com.example.nutrisiku.ui.screen.components.NutrisiKuBottomNavBar
 import com.example.nutrisiku.ui.theme.NutrisiKuTheme
@@ -44,8 +45,9 @@ fun HistoryScreen(
             )
         },
         bottomBar = { NutrisiKuBottomNavBar(
-            onHomeClick = { navigateToHome },
-            onDetectionClick = { navigateToDetection },
+            currentRoute = Screen.History.route, // Beri tahu bahwa rute saat ini adalah "history"
+            onHomeClick = navigateToHome,
+            onDetectionClick = navigateToDetection,
             onHistoryClick = { /* Navigasi ke Riwayat */ }
         ) }
     ) { innerPadding ->
@@ -129,6 +131,7 @@ fun HistoryDetailScreen(
             )
         },
         bottomBar = { NutrisiKuBottomNavBar(
+            currentRoute = Screen.History.route, // Beri tahu bahwa rute saat ini adalah "history"
             onHomeClick = { navigateToHome },
             onDetectionClick = { navigateToDetection },
             onHistoryClick = { navigateToHistory }
