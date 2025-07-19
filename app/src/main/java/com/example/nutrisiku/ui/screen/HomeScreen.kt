@@ -1,6 +1,5 @@
-package com.example.nutrisiku.ui
+package com.example.nutrisiku.ui.screen
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -13,7 +12,6 @@ import androidx.compose.material.icons.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material3.*
@@ -27,18 +25,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.nutrisiku.ui.theme.NutrisiKuTheme
+import com.example.nutrisiku.ui.screen.components.NutrisiKuBottomNavBar
 
 @Composable
-fun HomeScreen() {
+fun HomeScreen(
+    navigateToProfile: () -> Unit,
+    navigateToDetection: () -> Unit,
+    navigateToHistory: () -> Unit
+) {
     Scaffold(
-        bottomBar = { NutrisiKuBottomNavBar() }
+        bottomBar = { NutrisiKuBottomNavBar(
+            onHomeClick = { /* Navigasi ke Home */ },
+            onDetectionClick = { navigateToDetection },
+            onHistoryClick = { navigateToHistory }
+        ) }
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -49,15 +51,15 @@ fun HomeScreen() {
                 .verticalScroll(rememberScrollState())
         ) {
             Spacer(modifier = Modifier.height(16.dp))
-            HeaderSection(name = "Yoga", onProfileClick = { /* Aksi klik foto profil */ })
+            HeaderSection(name = "Yoga", onProfileClick = { navigateToProfile })
             Spacer(modifier = Modifier.height(24.dp))
             DateCard()
             Spacer(modifier = Modifier.height(16.dp))
             CalorieCard(consumed = 750, total = 1500)
             Spacer(modifier = Modifier.height(16.dp))
-            DetectNowButton(onClick = { /* Aksi klik tombol deteksi */ })
+            DetectNowButton(onClick = { navigateToDetection })
             Spacer(modifier = Modifier.height(24.dp))
-            HistorySection()
+            HistorySection(navigateToHistory)
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
@@ -205,7 +207,9 @@ fun DetectNowButton(onClick: () -> Unit) {
 }
 
 @Composable
-fun HistorySection() {
+fun HistorySection(
+    navigateToHistory: () -> Unit
+) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = "Riwayat Deteksi:",
@@ -216,7 +220,7 @@ fun HistorySection() {
         HistoryItemCard()
         Spacer(modifier = Modifier.height(12.dp))
         OutlinedButton(
-            onClick = { /* Aksi klik lihat semua */ },
+            onClick = { navigateToHistory },
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier
                 .fillMaxWidth()
@@ -262,55 +266,5 @@ fun HistoryItemCard() {
                 )
             }
         }
-    }
-}
-
-@Composable
-fun NutrisiKuBottomNavBar() {
-    var selectedItem by remember { mutableStateOf(0) }
-
-    NavigationBar(
-        containerColor = MaterialTheme.colorScheme.background,
-        modifier = Modifier.shadow(elevation = 8.dp)
-    ) {
-        NavigationBarItem(
-            selected = selectedItem == 0,
-            onClick = { selectedItem = 0 },
-            icon = { Icon(Icons.Filled.Home, contentDescription = "Home") },
-            label = { Text("Home") },
-            colors = NavigationBarItemDefaults.colors(
-                indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-            )
-        )
-
-        NavigationBarItem(
-            selected = false, // Atau kelola state seleksinya jika perlu
-            onClick = { /* Aksi klik deteksi */ },
-            icon = {
-                Icon(
-                    Icons.Filled.CameraAlt,
-                    contentDescription = "Deteksi",
-                    modifier = Modifier
-                        .size(40.dp) // Ukuran ikon lebih besar
-                        .background(MaterialTheme.colorScheme.primary, CircleShape)
-                        .padding(8.dp),
-                    tint = Color.White
-                )
-            },
-            label = { Text("Deteksi") },
-            colors = NavigationBarItemDefaults.colors(
-                indicatorColor = Color.Transparent // Tidak ada indikator untuk tombol tengah
-            )
-        )
-
-        NavigationBarItem(
-            selected = selectedItem == 1,
-            onClick = { selectedItem = 1 },
-            icon = { Icon(Icons.Filled.History, contentDescription = "Riwayat") },
-            label = { Text("Riwayat") },
-            colors = NavigationBarItemDefaults.colors(
-                indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-            )
-        )
     }
 }
