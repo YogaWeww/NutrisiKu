@@ -2,8 +2,22 @@
 // Anda bisa membuat file baru ini di dalam package ui.screen
 package com.example.nutrisiku.ui.screen
 
+import android.graphics.ImageDecoder
+import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,10 +28,20 @@ import androidx.compose.material.icons.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Height
-import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.MonitorWeight
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -28,30 +52,50 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import com.example.nutrisiku.R
 import com.example.nutrisiku.ui.navigation.Screen
-import com.example.nutrisiku.ui.screen.components.NutrisiKuBottomNavBar
 import com.example.nutrisiku.ui.screen.components.ActivityLevelDropdown
-import com.example.nutrisiku.ui.screen.components.GenderDropdown
-import com.example.nutrisiku.ui.theme.NutrisiKuTheme
+import com.example.nutrisiku.ui.screen.components.CalorieCard
+import com.example.nutrisiku.ui.screen.components.NutrisiKuBottomNavBar
+import com.example.nutrisiku.ui.viewmodel.HistoryViewModel
 import com.example.nutrisiku.ui.viewmodel.ProfileViewModel
+import java.io.File
 
 // Halaman utama untuk menampilkan profil
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    viewModel: ProfileViewModel, // Terima ViewModel
+    profileViewModel: ProfileViewModel,
+    historyViewModel: HistoryViewModel,
     onEditProfileClick: () -> Unit,
-    onBackClick: () -> Unit, // Mungkin tidak diperlukan jika navigasi utama via BottomBar
-    navigateToHome: () -> Unit, // Tambahkan ini
-    navigateToDetection: () -> Unit, // Tambahkan ini
-    navigateToHistory: () -> Unit // Tambahkan ini
+    onBackClick: () -> Unit,
+    navigateToHome: () -> Unit,
+    navigateToDetection: () -> Unit,
+    navigateToHistory: () -> Unit
 ) {
-    // Ambil UI state dari ViewModel
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by profileViewModel.uiState.collectAsState()
+    val todaysCalories by historyViewModel.todaysCalories.collectAsState()
+    val context = LocalContext.current
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = { uri: Uri? ->
+            uri?.let {
+                val bitmap = if (Build.VERSION.SDK_INT < 28) {
+                    MediaStore.Images.Media.getBitmap(context.contentResolver, it)
+                } else {
+                    val source = ImageDecoder.createSource(context.contentResolver, it)
+                    ImageDecoder.decodeBitmap(source)
+                }
+                profileViewModel.onProfileImageChanged(bitmap)
+            }
+        }
+    )
 
     Scaffold(
         topBar = {
@@ -64,12 +108,14 @@ fun ProfileScreen(
                 }
             )
         },
-        bottomBar = { NutrisiKuBottomNavBar(
-            currentRoute = Screen.Profile.route,
-            onHomeClick = navigateToHome,
-            onDetectionClick = navigateToDetection,
-            onHistoryClick = navigateToHistory
-        ) }
+        bottomBar = {
+            NutrisiKuBottomNavBar(
+                currentRoute = Screen.Profile.route,
+                onHomeClick = navigateToHome,
+                onDetectionClick = navigateToDetection,
+                onHistoryClick = navigateToHistory
+            )
+        }
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -81,90 +127,35 @@ fun ProfileScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Placeholder Foto Profil
-            Box(
+            AsyncImage(
+                model = if (uiState.imagePath.isNotEmpty()) File(uiState.imagePath) else R.drawable.logo_nutrisiku,
+                contentDescription = "Foto Profil",
                 modifier = Modifier
                     .size(120.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surface)
+                    .clickable { imagePickerLauncher.launch("image/*") },
+                contentScale = ContentScale.Crop
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = uiState.name, // Tampilkan nama dari state
+                text = uiState.name,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Kartu Kebutuhan Kalori
-            CalorieProfileCard(total = 1500)
+            CalorieCard(
+                total = uiState.tdee,
+                consumed = todaysCalories
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Tombol Edit Profil
             EditProfileButton(onClick = onEditProfileClick)
-        }
-    }
-}
-
-@Composable
-fun CalorieProfileCard(total: Int) {
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(elevation = 4.dp, shape = RoundedCornerShape(16.dp))
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Kebutuhan Kalori Harian:",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(top = 4.dp)
-            ) {
-                Text(
-                    text = total.toString(),
-                    style = MaterialTheme.typography.displaySmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = " KKAL",
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(start = 4.dp, end = 8.dp)
-                )
-                Icon(
-                    imageVector = Icons.Filled.LocalFireDepartment,
-                    contentDescription = "Kalori",
-                    tint = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.size(30.dp)
-                )
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            LinearProgressIndicator(
-                progress = 1.0f, // Di halaman profil, progress bar bisa dibuat penuh
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(12.dp)
-                    .clip(RoundedCornerShape(6.dp)),
-                color = MaterialTheme.colorScheme.secondary,
-                trackColor = Color.White
-            )
-            Text(
-                text = "750 KKAL TERSISA", // Data dummy
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier
-                    .align(Alignment.End)
-                    .padding(top = 8.dp)
-            )
         }
     }
 }

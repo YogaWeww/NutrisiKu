@@ -42,6 +42,8 @@ import com.example.nutrisiku.ui.viewmodel.DetectionViewModel
 fun DetectionScreen(
     viewModel: DetectionViewModel,
     onBackClick: () -> Unit,
+    onCameraClick: () -> Unit,
+    onManualClick: () -> Unit,
     navigateToResult: () -> Unit
 ) {
     val context = LocalContext.current
@@ -51,13 +53,14 @@ fun DetectionScreen(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri: Uri? ->
             uri?.let {
+                // Konversi URI menjadi Bitmap
                 val bitmap = if (Build.VERSION.SDK_INT < 28) {
                     MediaStore.Images.Media.getBitmap(context.contentResolver, it)
                 } else {
                     val source = ImageDecoder.createSource(context.contentResolver, it)
                     ImageDecoder.decodeBitmap(source)
                 }
-                // Kirim bitmap ke ViewModel dan navigasi ke hasil
+                // Kirim bitmap ke ViewModel dan navigasi ke halaman hasil
                 viewModel.onImageSelected(bitmap.copy(Bitmap.Config.ARGB_8888, true))
                 navigateToResult()
             }
@@ -109,19 +112,19 @@ fun DetectionScreen(
                 OptionButton(
                     text = "Kamera",
                     icon = Icons.Default.CameraAlt,
-                    onClick = { /* TODO: Implementasi kamera */ },
+                    onClick = onCameraClick, // Terhubung ke navigasi kamera
                     modifier = Modifier.weight(1f)
                 )
                 OptionButton(
                     text = "Galeri",
                     icon = Icons.Default.PhotoLibrary,
-                    onClick = { imagePickerLauncher.launch("image/*") },
+                    onClick = { imagePickerLauncher.launch("image/*") }, // Memicu launcher galeri
                     modifier = Modifier.weight(1f)
                 )
                 OptionButton(
                     text = "Manual",
                     icon = Icons.Default.Edit,
-                    onClick = { },
+                    onClick = onManualClick, // Terhubung ke navigasi input manual
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -147,68 +150,6 @@ fun OptionButton(
         }
     }
 }
-
-
-
-// --- 3. Halaman Input Manual ---
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ManualInputScreen(
-    onBackClick: () -> Unit,
-    onSaveClick: () -> Unit
-) {
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Input Manual", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Kembali")
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(16.dp)
-        ) {
-            OutlinedTextField(
-                value = "",
-                onValueChange = {},
-                label = { Text("Nama Makanan") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = "",
-                onValueChange = {},
-                label = { Text("Porsi (gram)") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = "",
-                onValueChange = {},
-                label = { Text("Kalori (KKAL)") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Button(
-                onClick = onSaveClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text("Simpan", fontWeight = FontWeight.Bold)
-            }
-        }
-    }
-}
-
 
 //// --- Previews ---
 //@Preview(showBackground = true, device = "id:pixel_5")

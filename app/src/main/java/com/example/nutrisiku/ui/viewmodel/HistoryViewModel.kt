@@ -7,12 +7,13 @@ import com.example.nutrisiku.data.HistoryEntity
 import com.example.nutrisiku.data.HistoryRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
-class HistoryViewModel(application: Application) : AndroidViewModel(application) {
-
-    // Inisialisasi HistoryRepository
-    private val historyRepository = HistoryRepository(application)
+class HistoryViewModel(
+    application: Application,
+    private val historyRepository: HistoryRepository
+) : AndroidViewModel(application) {
 
     // Expose Flow dari Repository sebagai StateFlow agar UI bisa mengamatinya.
     // Setiap kali ada data baru yang disimpan ke database,
@@ -26,5 +27,12 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
             initialValue = emptyList()
         )
 
-    // TODO: Tambahkan fungsi untuk menghapus item riwayat
+    // PERUBAHAN: StateFlow baru untuk total kalori hari ini
+    val todaysCalories: StateFlow<Int> = historyRepository.getTodaysCalories()
+        .map { it ?: 0 } // Jika null (tidak ada data), anggap 0
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = 0
+        )
 }

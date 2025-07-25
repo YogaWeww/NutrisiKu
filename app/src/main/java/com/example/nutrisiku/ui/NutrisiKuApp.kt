@@ -1,7 +1,11 @@
 package com.example.nutrisiku.ui
 
+import android.app.Application
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSavedStateRegistryOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -25,26 +29,31 @@ import com.example.nutrisiku.ui.screen.SplashScreen
 import com.example.nutrisiku.ui.viewmodel.DetectionViewModel
 import com.example.nutrisiku.ui.viewmodel.HistoryDetailViewModel
 import com.example.nutrisiku.ui.viewmodel.HistoryViewModel
+import com.example.nutrisiku.ui.viewmodel.ManualInputViewModel
 import com.example.nutrisiku.ui.viewmodel.ProfileViewModel
+import com.example.nutrisiku.ui.viewmodel.ViewModelFactory
 
 @Composable
 fun NutrisiKuApp(
-    modifier: Modifier = Modifier,
-    navController: NavHostController = rememberNavController()
+    startDestination: String // Terima start destination sebagai parameter
 ) {
-    // Buat instance ViewModel yang akan dibagikan ke beberapa layar
-    val profileViewModel: ProfileViewModel = viewModel()
-    // Buat instance DetectionViewModel yang akan dibagikan
-    val detectionViewModel: DetectionViewModel = viewModel()
-    // Buat instance HistoryViewModel
-    val historyViewModel: HistoryViewModel = viewModel()
+    val navController = rememberNavController()
+    val application = LocalContext.current.applicationContext as Application
+    val owner = LocalSavedStateRegistryOwner.current
 
-    val historyDetailViewModel: HistoryDetailViewModel = viewModel()
+    // PERUBAHAN: Bungkus pembuatan factory dengan 'remember'
+    val factory = remember(owner) {
+        ViewModelFactory(owner, application)
+    }
+
+    val profileViewModel: ProfileViewModel = viewModel(factory = factory)
+    val historyViewModel: HistoryViewModel = viewModel(factory = factory)
+    val detectionViewModel: DetectionViewModel = viewModel(factory = factory)
+    val manualInputViewModel: ManualInputViewModel = viewModel(factory = factory)
 
     NavHost(
         navController = navController,
-        startDestination = Screen.Splash.route,
-        modifier = modifier
+        startDestination = startDestination, // Gunakan start destination dari MainActivity
     ) {
         composable(Screen.Splash.route) {
             SplashScreen(
@@ -82,7 +91,8 @@ fun NutrisiKuApp(
 
         composable(Screen.Home.route) {
             HomeScreen(
-                viewModel = profileViewModel, // Teruskan ViewModel ke HomeScreen
+                profileViewModel = profileViewModel, // Teruskan ProfileViewModel
+                historyViewModel = historyViewModel, // Teruskan HistoryViewModel
                 navigateToProfile = { navController.navigate(Screen.Profile.route) },
                 navigateToDetection = { navController.navigate(Screen.Detection.route) },
                 navigateToHistory = { navController.navigate(Screen.History.route) }
@@ -91,10 +101,10 @@ fun NutrisiKuApp(
 
         composable(Screen.Profile.route) {
             ProfileScreen(
-                viewModel = profileViewModel, // Teruskan ViewModel
+                profileViewModel = profileViewModel, // Teruskan ProfileViewModel
+                historyViewModel = historyViewModel, // PERUBAHAN: Teruskan HistoryViewModel
                 onEditProfileClick = { navController.navigate(Screen.EditProfile.route) },
                 onBackClick = { navController.navigateUp() },
-                // Menambahkan parameter navigasi untuk BottomNavBar
                 navigateToHome = { navController.navigate(Screen.Home.route) },
                 navigateToDetection = { navController.navigate(Screen.Detection.route) },
                 navigateToHistory = { navController.navigate(Screen.History.route) }
@@ -131,23 +141,34 @@ fun NutrisiKuApp(
 
         composable(
             route = Screen.HistoryDetail.route,
-            arguments = listOf(navArgument("historyId") { type = NavType.IntType }),
+            arguments = listOf(navArgument("historyId") { type = NavType.IntType })
         ) {
+            // Gunakan factory yang sama untuk membuat HistoryDetailViewModel
+            val viewModel: HistoryDetailViewModel = viewModel(factory = factory)
             HistoryDetailScreen(
-                viewModel = historyDetailViewModel,
+                viewModel = viewModel,
                 onBackClick = { navController.navigateUp() },
-                // Menambahkan parameter navigasi untuk BottomNavBar
+                onSaveClick = {
+                    viewModel.updateHistory()
+                    navController.navigateUp()
+                },
+                onDeleteClick = {
+                    viewModel.deleteHistory()
+                    navController.navigateUp()
+                },
                 navigateToHome = { navController.navigate(Screen.Home.route) },
                 navigateToDetection = { navController.navigate(Screen.Detection.route) },
                 navigateToHistory = { navController.navigate(Screen.History.route) }
             )
         }
 
+        // Di dalam file NutrisiKuApp.kt
         composable(Screen.Detection.route) {
             DetectionScreen(
-                viewModel = detectionViewModel, // Teruskan ViewModel
+                viewModel = detectionViewModel,
                 onBackClick = { navController.navigateUp() },
-                // Navigasi ke hasil setelah gambar dipilih
+                onCameraClick = { navController.navigate(Screen.Camera.route) },
+                onManualClick = { navController.navigate(Screen.ManualInput.route) },
                 navigateToResult = { navController.navigate(Screen.DetectionResult.route) }
             )
         }
@@ -167,22 +188,19 @@ fun NutrisiKuApp(
 
         composable(Screen.ManualInput.route) {
             ManualInputScreen(
-                onBackClick = { navController.navigateUp() },
+                viewModel = manualInputViewModel,
+                onBackClick = {
+                    manualInputViewModel.clearState()
+                    navController.navigateUp()
+                },
                 onSaveClick = {
+                    // Navigasi terjadi di sini setelah ViewModel mengkonfirmasi sukses
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Home.route) { inclusive = true }
                     }
+                    // Bersihkan state setelah navigasi
+                    manualInputViewModel.clearState()
                 }
-            )
-        }
-
-        composable(Screen.Detection.route) {
-            DetectionScreen(
-                viewModel = detectionViewModel,
-                onBackClick = { navController.navigateUp() },
-                // PERUBAHAN: Arahkan ke layar kamera baru
-                onCameraClick = { navController.navigate(Screen.Camera.route) },
-                navigateToResult = { navController.navigate(Screen.DetectionResult.route) }
             )
         }
 

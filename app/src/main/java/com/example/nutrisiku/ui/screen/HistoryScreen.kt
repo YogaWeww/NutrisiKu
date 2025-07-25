@@ -1,5 +1,6 @@
 package com.example.nutrisiku.ui.screen
 
+import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -84,16 +85,20 @@ fun HistoryScreen(
                         val totalCaloriesForDay = items.sumOf { it.totalCalories }
                         DateHeader(date = date, totalCalorie = "Total: $totalCaloriesForDay KKAL")
                     }
-                    items(
-                        items = items,
-                        key = { it.id }
-                    ) { historyItem ->
+                    items(items, key = { it.id }) { historyItem ->
                         HistoryEntryCard(
-                            // PERUBAHAN: Teruskan path gambar yang sebenarnya
                             imagePath = historyItem.imagePath,
                             session = historyItem.sessionLabel,
                             totalCalorie = historyItem.totalCalories,
-                            onClick = { onHistoryItemClick(historyItem.id) }
+                            onClick = {
+                                // PERBAIKAN: Tambahkan pengecekan ID di sini
+                                if (historyItem.id > 0) {
+                                    Log.d("DEBUG_NAV", "HistoryScreen: Mengirim ID valid = ${historyItem.id}")
+                                    onHistoryItemClick(historyItem.id)
+                                } else {
+                                    Log.e("DEBUG_NAV", "HistoryScreen: Mencoba menavigasi dengan ID tidak valid = ${historyItem.id}")
+                                }
+                            }
                         )
                     }
                 }
@@ -101,6 +106,7 @@ fun HistoryScreen(
         }
     }
 }
+
 
 
 

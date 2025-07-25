@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,6 +25,7 @@ import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.DirectionsRun
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Wc
 import androidx.compose.material3.Card
@@ -32,6 +34,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -46,16 +49,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.asImageBitmap
 import coil.compose.AsyncImage
+import com.example.nutrisiku.R
+import com.example.nutrisiku.data.DetectionResult
 import com.example.nutrisiku.ui.navigation.Screen
-import com.example.nutrisiku.R // PERBAIKAN: Tambahkan import ini
 import java.io.File
+
 
 @Composable
 fun DetectedItem(name: String, calorie: String) {
@@ -266,7 +274,7 @@ fun ActivityLevelDropdown(
 @Composable
 fun ImageWithBoundingBoxes(
     bitmap: Bitmap,
-    detectionResults: List<Screen.DetectionResult>,
+    detectionResults: List<DetectionResult>,
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier) {
@@ -286,11 +294,78 @@ fun ImageWithBoundingBoxes(
                 val rect = result.boundingBox
                 drawRect(
                     color = Color.Red, // Anda bisa menggunakan warna dari tema
-                    topLeft = androidx.compose.ui.geometry.Offset(rect.left * scaleX, rect.top * scaleY),
-                    size = androidx.compose.ui.geometry.Size((rect.right - rect.left) * scaleX, (rect.bottom - rect.top) * scaleY),
+                    topLeft = Offset(rect.left * scaleX, rect.top * scaleY),
+                    size = Size((rect.right - rect.left) * scaleX, (rect.bottom - rect.top) * scaleY),
                     style = Stroke(width = 2.dp.toPx())
                 )
             }
+        }
+    }
+}
+
+
+@Composable
+fun CalorieCard(
+    total: Int,
+    consumed: Int,
+    modifier: Modifier = Modifier
+) {
+    val remaining = total - consumed
+    // Hindari pembagian dengan nol jika TDEE belum dihitung
+    val progress = if (total > 0) consumed.toFloat() / total.toFloat() else 0f
+
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = modifier
+            .fillMaxWidth()
+            .shadow(elevation = 4.dp, shape = RoundedCornerShape(16.dp))
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "Kebutuhan Kalori Harian:",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(top = 4.dp)
+            ) {
+                Text(
+                    text = total.toString(),
+                    style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = " KKAL",
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.padding(start = 4.dp, end = 8.dp)
+                )
+                Icon(
+                    imageVector = Icons.Filled.LocalFireDepartment,
+                    contentDescription = "Kalori",
+                    tint = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.size(30.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            LinearProgressIndicator(
+                progress = { progress }, // Gunakan progress dinamis
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(12.dp)
+                    .clip(RoundedCornerShape(6.dp)),
+                color = MaterialTheme.colorScheme.secondary,
+                trackColor = Color.White
+            )
+            Text(
+                text = "$remaining KKAL TERSISA", // Tampilkan sisa kalori dinamis
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .padding(top = 8.dp)
+            )
         }
     }
 }

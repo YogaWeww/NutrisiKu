@@ -38,15 +38,15 @@ data class DetectionUiState(
     val isLoading: Boolean = false
 )
 
-class DetectionViewModel(application: Application) : AndroidViewModel(application) {
+class DetectionViewModel(
+    application: Application,
+    private val nutritionRepository: NutritionRepository,
+    private val historyRepository: HistoryRepository
+) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(DetectionUiState())
     val uiState = _uiState.asStateFlow()
-
-    // Inisialisasi semua repository yang dibutuhkan
     private val foodDetector = FoodDetector(application)
-    private val nutritionRepository = NutritionRepository(application)
-    private val historyRepository = HistoryRepository(application) // PERUBAHAN: Tambahkan HistoryRepository
     private val nutritionData: Map<String, FoodNutrition> = nutritionRepository.getNutritionData()
 
     // Fungsi yang dipanggil oleh UI saat gambar dipilih

@@ -1,6 +1,7 @@
 package com.example.nutrisiku.ui.viewmodel
 
 import android.app.Application
+import android.graphics.Bitmap
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.nutrisiku.data.UserData
@@ -8,6 +9,7 @@ import com.example.nutrisiku.data.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -20,13 +22,15 @@ data class EditProfileUiState(
     val height: String = "",
     val gender: String = "Pria",
     val activityLevel: String = "Aktivitas Ringan",
-    val tdee: Int = 0 // Untuk menyimpan hasil kalkulasi TDEE
+    val tdee: Int = 0,
+    val imagePath: String = "" // PERUBAHAN: Tambahkan ini
 )
 
-class ProfileViewModel(application: Application) : AndroidViewModel(application) {
+class ProfileViewModel(
+    application: Application,
+    private val userRepository: UserRepository
+) : AndroidViewModel(application) {
 
-    // Inisialisasi UserRepository
-    private val userRepository = UserRepository(application)
 
     // StateFlow untuk menampung data profil yang akan diobservasi oleh UI
     private val _uiState = MutableStateFlow(EditProfileUiState())
@@ -45,7 +49,8 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                         height = if (userData.height > 0) userData.height.toString() else "",
                         gender = userData.gender,
                         activityLevel = userData.activityLevel,
-                        tdee = calculatedTdee // Simpan hasil TDEE ke state
+                        tdee = calculatedTdee,
+                        imagePath = userData.imagePath // PERUBAHAN: Update state dengan path gambar
                     )
                 }
             }
@@ -119,5 +124,18 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
 
         // Hitung TDEE dan bulatkan ke integer terdekat
         return (bmr * activityFactor).roundToInt()
+    }
+
+    // PERUBAHAN: Fungsi baru untuk menangani perubahan gambar
+    fun onProfileImageChanged(bitmap: Bitmap) {
+        viewModelScope.launch {
+            val imagePath = userRepository.saveProfilePicture(bitmap)
+            if (imagePath != null) {
+                _uiState.update { it.copy(imagePath = imagePath) }
+                // Langsung simpan path baru ke DataStore
+                val updatedUserData = userRepository.userDataFlow.first().copy(imagePath = imagePath)
+                userRepository.saveUserData(updatedUserData)
+            }
+        }
     }
 }

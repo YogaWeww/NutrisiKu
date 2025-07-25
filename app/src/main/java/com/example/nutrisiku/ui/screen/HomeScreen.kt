@@ -26,22 +26,32 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.example.nutrisiku.ui.navigation.Screen
+import com.example.nutrisiku.ui.screen.components.CalorieCard
+import com.example.nutrisiku.ui.screen.components.HistoryEntryCard
 import com.example.nutrisiku.ui.screen.components.NutrisiKuBottomNavBar
+import com.example.nutrisiku.ui.viewmodel.HistoryViewModel
 import com.example.nutrisiku.ui.viewmodel.ProfileViewModel
-
+import java.io.File
+import com.example.nutrisiku.R
 
 @Composable
 fun HomeScreen(
-    viewModel: ProfileViewModel, // Terima ViewModel
+    profileViewModel: ProfileViewModel,
+    historyViewModel: HistoryViewModel,
     navigateToProfile: () -> Unit,
     navigateToDetection: () -> Unit,
     navigateToHistory: () -> Unit
 ) {
     // Ambil UI state dari ViewModel
-    val userProfileState by viewModel.uiState.collectAsState()
+    val profileState by profileViewModel.uiState.collectAsState()
+    val historyList by historyViewModel.historyList.collectAsState()
+    val todaysCalories by historyViewModel.todaysCalories.collectAsState() // Ambil kalori hari ini
+    val latestHistory = historyList.firstOrNull()
 
     Scaffold(
         bottomBar = {
@@ -64,16 +74,27 @@ fun HomeScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
             // Tampilkan nama pengguna dari ViewModel
-            HeaderSection(name = userProfileState.name, onProfileClick = navigateToProfile)
+            HeaderSection(
+                name = profileState.name,
+                imagePath = profileState.imagePath,
+                onProfileClick = navigateToProfile
+            )
             Spacer(modifier = Modifier.height(24.dp))
             DateCard()
             Spacer(modifier = Modifier.height(16.dp))
-            CalorieCard(consumed = 750, total = userProfileState.tdee)
+            // Di dalam HomeScreen.kt
+            CalorieCard(
+                consumed = todaysCalories,
+                total = profileState.tdee
+            )
+
             Spacer(modifier = Modifier.height(16.dp))
             DetectNowButton(onClick = navigateToDetection)
             Spacer(modifier = Modifier.height(24.dp))
-            HistorySection(onSeeAllClick = navigateToHistory)
-            Spacer(modifier = Modifier.height(16.dp))
+            HistorySection(
+                latestHistory = latestHistory, // Teruskan data riwayat terbaru
+                onSeeAllClick = navigateToHistory
+            )
         }
     }
 }
@@ -81,6 +102,7 @@ fun HomeScreen(
 @Composable
 fun HeaderSection(
     name: String,
+    imagePath: String, // Terima path gambar
     onProfileClick: () -> Unit
 ) {
     Row(
@@ -94,15 +116,16 @@ fun HeaderSection(
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
         )
-        Box(
+        AsyncImage(
+            model = if (imagePath.isNotEmpty()) File(imagePath) else R.drawable.logo_nutrisiku,
+            contentDescription = "Foto Profil",
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surface)
-                .clickable { onProfileClick() }
-        ) {
-            // Placeholder untuk foto profil
-        }
+                .clickable { onProfileClick() },
+            contentScale = ContentScale.Crop
+        )
     }
 }
 
@@ -128,62 +151,6 @@ fun DateCard() {
                 text = "Minggu, 08 Juli 2025",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-    }
-}
-
-@Composable
-fun CalorieCard(consumed: Int, total: Int) {
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(elevation = 4.dp, shape = RoundedCornerShape(16.dp))
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Kebutuhan Kalori Harian:",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(top = 4.dp)
-            ) {
-                Text(
-                    text = total.toString(),
-                    style = MaterialTheme.typography.displaySmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = " KKAL",
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(start = 4.dp, end = 8.dp)
-                )
-                Icon(
-                    imageVector = Icons.Filled.LocalFireDepartment,
-                    contentDescription = "Kalori",
-                    tint = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.size(30.dp)
-                )
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            LinearProgressIndicator(
-                progress = consumed.toFloat() / total.toFloat(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(12.dp)
-                    .clip(RoundedCornerShape(6.dp)),
-                color = MaterialTheme.colorScheme.secondary,
-                trackColor = Color.White
-            )
-            Text(
-                text = "${total - consumed} KKAL TERSISA",
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier
-                    .align(Alignment.End)
-                    .padding(top = 8.dp)
             )
         }
     }
@@ -224,7 +191,10 @@ fun DetectNowButton(onClick: () -> Unit) {
 // ... (Sisa Composable lain di HomeScreen seperti HeaderSection, CalorieCard, dll. tetap sama)
 // Pastikan HistorySection dimodifikasi untuk menerima onSeeAllClick
 @Composable
-fun HistorySection(onSeeAllClick: () -> Unit) {
+fun HistorySection(
+    latestHistory: com.example.nutrisiku.data.HistoryEntity?, // Terima data riwayat
+    onSeeAllClick: () -> Unit
+) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = "Riwayat Deteksi:",
@@ -232,7 +202,17 @@ fun HistorySection(onSeeAllClick: () -> Unit) {
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(12.dp))
-        HistoryItemCard() // Asumsi Composable ini ada di file yang sama atau diimpor
+        if (latestHistory != null) {
+            HistoryEntryCard(
+                imagePath = latestHistory.imagePath,
+                session = latestHistory.sessionLabel,
+                totalCalorie = latestHistory.totalCalories,
+                onClick = onSeeAllClick
+            )
+        } else {
+            // Tampilan jika riwayat masih kosong
+            Text("Belum ada riwayat deteksi.")
+        }
         Spacer(modifier = Modifier.height(12.dp))
         OutlinedButton(
             onClick = onSeeAllClick,
@@ -246,40 +226,6 @@ fun HistorySection(onSeeAllClick: () -> Unit) {
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
             )
-        }
-    }
-}
-
-@Composable
-fun HistoryItemCard() {
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color.White)
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column {
-                Text(
-                    text = "Makan Siang",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Total: 750 KKAL",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
-            }
         }
     }
 }

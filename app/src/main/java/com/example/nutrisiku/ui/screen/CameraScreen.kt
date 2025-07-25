@@ -42,7 +42,7 @@ fun CameraScreen(
     viewModel: DetectionViewModel,
     navigateToResult: () -> Unit
 ) {
-    val context = LocalContext.current
+    LocalContext.current
     val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
 
     Scaffold { paddingValues ->

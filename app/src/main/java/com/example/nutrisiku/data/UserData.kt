@@ -7,5 +7,6 @@ data class UserData(
     val weight: Double = 0.0,
     val height: Double = 0.0,
     val gender: String = "Pria",
-    val activityLevel: String = "Aktivitas Ringan"
+    val activityLevel: String = "Aktivitas Ringan",
+    val imagePath: String = "" // PERUBAHAN: Tambahkan ini
 )

@@ -13,7 +13,6 @@ sealed class Screen(val route: String) {
     object History : Screen("history")
     object Camera : Screen("camera")
     object HistoryDetail : Screen("history_detail/{historyId}") {
-        // Fungsi untuk membuat rute dengan argumen
         fun createRoute(historyId: Int) = "history_detail/$historyId"
     }
 }

@@ -19,7 +19,7 @@ tensorflowLite = "0.4.4"
 gson = "2.13.1"
 coilCompose = "2.7.0"
 room = "2.7.2"
-ksp = "1.9.24-1.0.20"
+ksp = "2.2.0-2.0.2"
 camerax = "1.4.2"
 accompanistPermissions = "0.32.0"
 
