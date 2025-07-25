@@ -19,6 +19,11 @@ import androidx.compose.material.icons.filled.MonitorWeight
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,17 +37,22 @@ import com.example.nutrisiku.ui.screen.components.NutrisiKuBottomNavBar
 import com.example.nutrisiku.ui.screen.components.ActivityLevelDropdown
 import com.example.nutrisiku.ui.screen.components.GenderDropdown
 import com.example.nutrisiku.ui.theme.NutrisiKuTheme
+import com.example.nutrisiku.ui.viewmodel.ProfileViewModel
 
 // Halaman utama untuk menampilkan profil
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
+    viewModel: ProfileViewModel, // Terima ViewModel
     onEditProfileClick: () -> Unit,
     onBackClick: () -> Unit, // Mungkin tidak diperlukan jika navigasi utama via BottomBar
     navigateToHome: () -> Unit, // Tambahkan ini
     navigateToDetection: () -> Unit, // Tambahkan ini
     navigateToHistory: () -> Unit // Tambahkan ini
 ) {
+    // Ambil UI state dari ViewModel
+    val uiState by viewModel.uiState.collectAsState()
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -82,7 +92,7 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Yoga", // Data dummy
+                text = uiState.name, // Tampilkan nama dari state
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
@@ -196,12 +206,15 @@ fun EditProfileButton(onClick: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProfileScreen(
+    viewModel: ProfileViewModel,
     onBackClick: () -> Unit,
     onSaveClick: () -> Unit,
     navigateToHome: () -> Unit,
     navigateToDetection: () -> Unit,
     navigateToHistory: () -> Unit
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -227,10 +240,9 @@ fun EditProfileScreen(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            // PERUBAHAN: Menambahkan semua input field sesuai mockup
             OutlinedTextField(
-                value = "Yoga", // Data dummy
-                onValueChange = {},
+                value = uiState.name,
+                onValueChange = viewModel::onNameChange,
                 label = { Text("Nama / Username") },
                 leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth()
@@ -238,8 +250,8 @@ fun EditProfileScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             OutlinedTextField(
-                value = "22", // Data dummy
-                onValueChange = {},
+                value = uiState.age,
+                onValueChange = viewModel::onAgeChange,
                 label = { Text("Umur (Tahun)") },
                 leadingIcon = { Icon(Icons.Default.Cake, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth()
@@ -247,8 +259,8 @@ fun EditProfileScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             OutlinedTextField(
-                value = "65", // Data dummy
-                onValueChange = {},
+                value = uiState.weight,
+                onValueChange = viewModel::onWeightChange,
                 label = { Text("Berat Badan (kg)") },
                 leadingIcon = { Icon(Icons.Default.MonitorWeight, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth()
@@ -256,20 +268,24 @@ fun EditProfileScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             OutlinedTextField(
-                value = "175", // Data dummy
-                onValueChange = {},
+                value = uiState.height,
+                onValueChange = viewModel::onHeightChange,
                 label = { Text("Tinggi Badan (cm)") },
                 leadingIcon = { Icon(Icons.Default.Height, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Implementasi Dropdown untuk Jenis Kelamin
-            GenderDropdown()
+            GenderDropdown(
+                selectedGender = uiState.gender,
+                onGenderSelected = viewModel::onGenderChange
+            )
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Implementasi Dropdown untuk Tingkat Aktivitas
-            ActivityLevelDropdown()
+            ActivityLevelDropdown(
+                selectedActivity = uiState.activityLevel,
+                onActivitySelected = viewModel::onActivityLevelChange
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -285,6 +301,44 @@ fun EditProfileScreen(
         }
     }
 }
+
+// Modifikasi Dropdown agar bisa dikontrol oleh ViewModel
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun GenderDropdown(
+    selectedGender: String,
+    onGenderSelected: (String) -> Unit
+) {
+    var isExpanded by remember { mutableStateOf(false) }
+    val genderOptions = listOf("Pria", "Wanita")
+
+    ExposedDropdownMenuBox(
+        expanded = isExpanded,
+        onExpandedChange = { isExpanded = it }
+    ) {
+        OutlinedTextField(
+            value = selectedGender,
+            onValueChange = {},
+            readOnly = true,
+            // ...
+        )
+        ExposedDropdownMenu(
+            expanded = isExpanded,
+            onDismissRequest = { isExpanded = false }
+        ) {
+            genderOptions.forEach { gender ->
+                DropdownMenuItem(
+                    text = { Text(gender) },
+                    onClick = {
+                        onGenderSelected(gender) // Panggil fungsi dari ViewModel
+                        isExpanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
 
 
 //@Preview(showBackground = true, device = "id:pixel_5")

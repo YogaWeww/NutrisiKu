@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,14 +30,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.nutrisiku.ui.navigation.Screen
 import com.example.nutrisiku.ui.screen.components.NutrisiKuBottomNavBar
+import com.example.nutrisiku.ui.viewmodel.ProfileViewModel
 
 
 @Composable
 fun HomeScreen(
+    viewModel: ProfileViewModel, // Terima ViewModel
     navigateToProfile: () -> Unit,
     navigateToDetection: () -> Unit,
     navigateToHistory: () -> Unit
 ) {
+    // Ambil UI state dari ViewModel
+    val userProfileState by viewModel.uiState.collectAsState()
+
     Scaffold(
         bottomBar = {
             NutrisiKuBottomNavBar(
@@ -57,11 +63,12 @@ fun HomeScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             Spacer(modifier = Modifier.height(16.dp))
-            HeaderSection(name = "Yoga", onProfileClick = navigateToProfile)
+            // Tampilkan nama pengguna dari ViewModel
+            HeaderSection(name = userProfileState.name, onProfileClick = navigateToProfile)
             Spacer(modifier = Modifier.height(24.dp))
             DateCard()
             Spacer(modifier = Modifier.height(16.dp))
-            CalorieCard(consumed = 750, total = 1500)
+            CalorieCard(consumed = 750, total = userProfileState.tdee)
             Spacer(modifier = Modifier.height(16.dp))
             DetectNowButton(onClick = navigateToDetection)
             Spacer(modifier = Modifier.height(24.dp))

@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 // State class untuk menampung semua state yang dibutuhkan oleh UI Edit Profile
 data class EditProfileUiState(
@@ -18,7 +19,8 @@ data class EditProfileUiState(
     val weight: String = "",
     val height: String = "",
     val gender: String = "Pria",
-    val activityLevel: String = "Aktivitas Ringan"
+    val activityLevel: String = "Aktivitas Ringan",
+    val tdee: Int = 0 // Untuk menyimpan hasil kalkulasi TDEE
 )
 
 class ProfileViewModel(application: Application) : AndroidViewModel(application) {
@@ -31,10 +33,10 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     val uiState: StateFlow<EditProfileUiState> = _uiState.asStateFlow()
 
     init {
-        // Saat ViewModel dibuat, langsung ambil data pengguna dari DataStore
         viewModelScope.launch {
             userRepository.userDataFlow.collect { userData ->
-                // Update UI state dengan data terbaru dari DataStore
+                // Hitung TDEE setiap kali data pengguna dimuat
+                val calculatedTdee = calculateTdee(userData)
                 _uiState.update {
                     it.copy(
                         name = userData.name,
@@ -42,7 +44,8 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                         weight = if (userData.weight > 0) userData.weight.toString() else "",
                         height = if (userData.height > 0) userData.height.toString() else "",
                         gender = userData.gender,
-                        activityLevel = userData.activityLevel
+                        activityLevel = userData.activityLevel,
+                        tdee = calculatedTdee // Simpan hasil TDEE ke state
                     )
                 }
             }
@@ -88,6 +91,33 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                 activityLevel = currentState.activityLevel
             )
             userRepository.saveUserData(userData)
+            // TDEE akan dihitung ulang secara otomatis oleh 'collect' di init block
         }
+    }
+
+    private fun calculateTdee(userData: UserData): Int {
+        if (userData.weight <= 0 || userData.height <= 0 || userData.age <= 0) {
+            return 0
+        }
+
+        // Hitung BMR (Basal Metabolic Rate) menggunakan rumus Mifflin-St Jeor
+        val bmr = if (userData.gender == "Pria") {
+            (10 * userData.weight) + (6.25 * userData.height) - (5 * userData.age) + 5
+        } else { // Wanita
+            (10 * userData.weight) + (6.25 * userData.height) - (5 * userData.age) - 161
+        }
+
+        // Tentukan faktor aktivitas
+        val activityFactor = when (userData.activityLevel) {
+            "Jarang Olahraga" -> 1.2
+            "Aktivitas Ringan" -> 1.375
+            "Aktivitas Sedang" -> 1.55
+            "Sangat Aktif" -> 1.725
+            "Ekstra Aktif" -> 1.9
+            else -> 1.2
+        }
+
+        // Hitung TDEE dan bulatkan ke integer terdekat
+        return (bmr * activityFactor).roundToInt()
     }
 }

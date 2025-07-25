@@ -15,11 +15,16 @@ import androidx.compose.ui.unit.dp
 import com.example.nutrisiku.ui.screen.components.ActivityLevelDropdown
 import com.example.nutrisiku.ui.screen.components.GenderDropdown
 import com.example.nutrisiku.ui.theme.NutrisiKuTheme
+import com.example.nutrisiku.ui.viewmodel.ProfileViewModel
 
 @Composable
 fun ProfileInputScreen(
+    viewModel: ProfileViewModel, // Terima ViewModel sebagai parameter
     onConfirmClick: () -> Unit
 ) {
+    // Ambil UI state dari ViewModel
+    val uiState by viewModel.uiState.collectAsState()
+
     Scaffold { innerPadding ->
         Column(
             modifier = Modifier
@@ -45,8 +50,8 @@ fun ProfileInputScreen(
 
             // Input Fields
             OutlinedTextField(
-                value = "", // Akan dihubungkan ke ViewModel
-                onValueChange = {},
+                value = uiState.name, // Baca data dari state
+                onValueChange = { viewModel.onNameChange(it) }, // Kirim perubahan ke ViewModel
                 label = { Text("Nama / Username") },
                 leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth()
@@ -54,8 +59,8 @@ fun ProfileInputScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             OutlinedTextField(
-                value = "", // Akan dihubungkan ke ViewModel
-                onValueChange = {},
+                value = uiState.age,
+                onValueChange = { viewModel.onAgeChange(it) },
                 label = { Text("Umur (Tahun)") },
                 leadingIcon = { Icon(Icons.Default.Cake, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth()
@@ -63,8 +68,8 @@ fun ProfileInputScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             OutlinedTextField(
-                value = "", // Akan dihubungkan ke ViewModel
-                onValueChange = {},
+                value = uiState.weight, // Baca data dari state
+                onValueChange = { viewModel.onWeightChange(it) }, // Kirim perubahan ke ViewModel
                 label = { Text("Berat Badan (kg)") },
                 leadingIcon = { Icon(Icons.Default.MonitorWeight, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth()
@@ -72,8 +77,8 @@ fun ProfileInputScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             OutlinedTextField(
-                value = "", // Akan dihubungkan ke ViewModel
-                onValueChange = {},
+                value = uiState.height, // Baca data dari state
+                onValueChange = { viewModel.onHeightChange(it) }, // Kirim perubahan ke ViewModel
                 label = { Text("Tinggi Badan (cm)") },
                 leadingIcon = { Icon(Icons.Default.Height, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth()
@@ -83,7 +88,10 @@ fun ProfileInputScreen(
             GenderDropdown()
             Spacer(modifier = Modifier.height(8.dp))
 
-            ActivityLevelDropdown()
+            ActivityLevelDropdown(
+                selectedActivity = uiState.activityLevel,
+                onActivitySelected = viewModel::onActivityLevelChange
+            )
 
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -108,10 +116,10 @@ fun ProfileInputScreen(
 }
 
 
-@Preview(showBackground = true, device = "id:pixel_5")
-@Composable
-fun ProfileInputScreenPreview() {
-    NutrisiKuTheme {
-        ProfileInputScreen(onConfirmClick = {})
-    }
-}
+//@Preview(showBackground = true, device = "id:pixel_5")
+//@Composable
+//fun ProfileInputScreenPreview() {
+//    NutrisiKuTheme {
+//        ProfileInputScreen(onConfirmClick = {})
+//    }
+//}

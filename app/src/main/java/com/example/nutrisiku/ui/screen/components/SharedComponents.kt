@@ -1,13 +1,21 @@
 package com.example.nutrisiku.ui.screen.components
 
+import android.graphics.Bitmap
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Text
@@ -18,6 +26,8 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Wc
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -34,10 +44,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.example.nutrisiku.ui.navigation.Screen
+import com.example.nutrisiku.R // PERBAIKAN: Tambahkan import ini
+import java.io.File
 
 @Composable
 fun DetectedItem(name: String, calorie: String) {
@@ -58,20 +76,16 @@ fun DetectedItem(name: String, calorie: String) {
 
 @Composable
 fun NutrisiKuBottomNavBar(
-    // PERBAIKAN: Tambahkan parameter untuk rute saat ini
     currentRoute: String?,
     onHomeClick: () -> Unit,
     onDetectionClick: () -> Unit,
     onHistoryClick: () -> Unit
 ) {
-    // PERBAIKAN: Hapus state lokal 'selectedItem'
-
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.background,
         modifier = Modifier.shadow(elevation = 8.dp)
     ) {
         NavigationBarItem(
-            // Logika 'selected' sekarang berdasarkan rute
             selected = currentRoute == Screen.Home.route,
             onClick = onHomeClick,
             icon = { Icon(Icons.Filled.Home, contentDescription = "Home") },
@@ -82,7 +96,7 @@ fun NutrisiKuBottomNavBar(
         )
 
         NavigationBarItem(
-            selected = false, // Tombol tengah tidak pernah dipilih
+            selected = false,
             onClick = onDetectionClick,
             icon = {
                 Icon(
@@ -102,7 +116,6 @@ fun NutrisiKuBottomNavBar(
         )
 
         NavigationBarItem(
-            // Logika 'selected' sekarang berdasarkan rute
             selected = currentRoute == Screen.History.route,
             onClick = onHistoryClick,
             icon = { Icon(Icons.Filled.History, contentDescription = "Riwayat") },
@@ -111,6 +124,56 @@ fun NutrisiKuBottomNavBar(
                 indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
             )
         )
+    }
+}
+
+@Composable
+fun DateHeader(date: String, totalCalorie: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background) // Latar belakang agar tidak transparan
+            .padding(vertical = 8.dp)
+    ) {
+        Text(text = date, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(text = totalCalorie, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HistoryEntryCard(
+    imagePath: String,
+    session: String,
+    totalCalorie: Int,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // PERUBAHAN: Gunakan AsyncImage untuk memuat gambar dari file
+            AsyncImage(
+                model = File(imagePath), // Muat gambar dari file
+                contentDescription = session,
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(12.dp)),
+                contentScale = ContentScale.Crop,
+                placeholder = painterResource(id = R.drawable.logo_nutrisiku) // Tampilkan logo saat memuat
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = session, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(text = "Total: $totalCalorie KKAL", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+            }
+        }
     }
 }
 
@@ -158,11 +221,14 @@ fun GenderDropdown() {
     }
 }
 
+// PERBAIKAN: Menambahkan parameter ke ActivityLevelDropdown
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ActivityLevelDropdown() {
+fun ActivityLevelDropdown(
+    selectedActivity: String,
+    onActivitySelected: (String) -> Unit
+) {
     var isExpanded by remember { mutableStateOf(false) }
-    var selectedActivity by remember { mutableStateOf("Aktivitas Ringan") }
     val activityOptions = listOf("Jarang Olahraga", "Aktivitas Ringan", "Aktivitas Sedang", "Sangat Aktif", "Ekstra Aktif")
 
     ExposedDropdownMenuBox(
@@ -173,13 +239,8 @@ fun ActivityLevelDropdown() {
             value = selectedActivity,
             onValueChange = {},
             readOnly = true,
-            label = { androidx.compose.material3.Text("Tingkat Aktivitas Harian") },
-            leadingIcon = {
-                androidx.compose.material3.Icon(
-                    Icons.Default.DirectionsRun,
-                    contentDescription = null
-                )
-            },
+            label = { Text("Tingkat Aktivitas Harian") },
+            leadingIcon = { Icon(Icons.Default.DirectionsRun, contentDescription = null) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded) },
             modifier = Modifier
                 .fillMaxWidth()
@@ -191,11 +252,43 @@ fun ActivityLevelDropdown() {
         ) {
             activityOptions.forEach { activity ->
                 DropdownMenuItem(
-                    text = { androidx.compose.material3.Text(activity) },
+                    text = { Text(activity) },
                     onClick = {
-                        selectedActivity = activity
+                        onActivitySelected(activity) // Panggil fungsi dari ViewModel
                         isExpanded = false
                     }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ImageWithBoundingBoxes(
+    bitmap: Bitmap,
+    detectionResults: List<Screen.DetectionResult>,
+    modifier: Modifier = Modifier
+) {
+    Box(modifier = modifier) {
+        Image(
+            bitmap = bitmap.asImageBitmap(),
+            contentDescription = "Hasil Deteksi",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // Canvas untuk menggambar bounding box di atas gambar
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val scaleX = size.width / bitmap.width
+            val scaleY = size.height / bitmap.height
+
+            detectionResults.forEach { result ->
+                val rect = result.boundingBox
+                drawRect(
+                    color = Color.Red, // Anda bisa menggunakan warna dari tema
+                    topLeft = androidx.compose.ui.geometry.Offset(rect.left * scaleX, rect.top * scaleY),
+                    size = androidx.compose.ui.geometry.Size((rect.right - rect.left) * scaleX, (rect.bottom - rect.top) * scaleY),
+                    style = Stroke(width = 2.dp.toPx())
                 )
             }
         }
