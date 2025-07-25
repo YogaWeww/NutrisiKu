@@ -11,18 +11,10 @@ import com.example.nutrisiku.data.HistoryRepository
 import com.example.nutrisiku.data.NutritionRepository
 import com.example.nutrisiku.data.UserRepository
 
-class ViewModelFactory(
-    owner: SavedStateRegistryOwner,
-    private val application: Application,
-    defaultArgs: Bundle? = null
-) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
+class ViewModelFactory(private val application: Application) : ViewModelProvider.NewInstanceFactory() {
 
     @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(
-        key: String,
-        modelClass: Class<T>,
-        handle: SavedStateHandle
-    ): T {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
         val userRepository = UserRepository(application)
         val historyRepository = HistoryRepository(application)
         val nutritionRepository = NutritionRepository(application)
@@ -40,11 +32,7 @@ class ViewModelFactory(
             modelClass.isAssignableFrom(ManualInputViewModel::class.java) -> {
                 ManualInputViewModel(application, historyRepository) as T
             }
-            // Tambahkan resep untuk membuat HistoryDetailViewModel
-            modelClass.isAssignableFrom(HistoryDetailViewModel::class.java) -> {
-                HistoryDetailViewModel(application, handle, historyRepository, nutritionRepository) as T
-            }
-            else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
+            else -> throw IllegalArgumentException("Unknown ViewModel class: " + modelClass.name)
         }
     }
 }

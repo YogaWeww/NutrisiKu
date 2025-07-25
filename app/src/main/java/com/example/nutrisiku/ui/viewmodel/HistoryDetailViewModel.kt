@@ -1,6 +1,7 @@
 package com.example.nutrisiku.ui.viewmodel
 
 import android.app.Application
+import android.os.Bundle
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
@@ -16,11 +17,12 @@ import kotlinx.coroutines.launch
 
 class HistoryDetailViewModel(
     application: Application,
-    savedStateHandle: SavedStateHandle,
+    arguments: Bundle?, // Terima Bundle
     private val historyRepository: HistoryRepository,
     private val nutritionRepository: NutritionRepository
 ) : AndroidViewModel(application) {
 
+    private val historyId: Int = arguments?.getInt("historyId") ?: -1 // Ambil ID dari Bundle
     private val _historyDetail = MutableStateFlow<HistoryEntity?>(null)
     val historyDetail = _historyDetail.asStateFlow()
 
@@ -28,7 +30,7 @@ class HistoryDetailViewModel(
 
     init {
         // Ambil ID dari handle dengan aman
-        val historyId: Int? = savedStateHandle["historyId"]
+        val historyId: Int? = arguments?.getInt("historyId")
 
         Log.d("HistoryDetailVM", "Attempting to load history with ID: $historyId")
 
@@ -45,6 +47,17 @@ class HistoryDetailViewModel(
         }
     }
 
+    // PERUBAHAN: Fungsi baru untuk mengubah nama makanan
+    fun onNameChange(itemIndex: Int, newName: String) {
+        _historyDetail.update { currentDetail ->
+            currentDetail?.copy(
+                foodItems = currentDetail.foodItems.mapIndexed { index, item ->
+                    if (index == itemIndex) item.copy(name = newName) else item
+                }
+            )
+        }
+    }
+
     fun onPortionChange(itemIndex: Int, newPortionString: String) {
         _historyDetail.update { currentDetail ->
             currentDetail?.let {
@@ -53,17 +66,20 @@ class HistoryDetailViewModel(
                     val oldItem = updatedItems[itemIndex]
                     val newPortion = newPortionString.toIntOrNull() ?: 0
 
+                    // Cari data nutrisi asli berdasarkan nama LAMA untuk mendapatkan rasio kalori
                     val foodInfo = nutritionData.values.find { food -> food.nama_tampilan == oldItem.name }
 
+                    // Hitung ulang kalori berdasarkan rasio
                     val newCalories = foodInfo?.let { nutrition ->
                         (nutrition.kalori_per_100g / 100.0 * newPortion).toInt()
-                    } ?: oldItem.calories
+                    } ?: oldItem.calories // Jika tidak ditemukan, gunakan kalori lama
 
                     updatedItems[itemIndex] = oldItem.copy(
                         portion = newPortion,
                         calories = newCalories
                     )
                 }
+                // Hitung ulang total kalori keseluruhan dan update state
                 val newTotalCalories = updatedItems.sumOf { item -> item.calories }
                 it.copy(foodItems = updatedItems, totalCalories = newTotalCalories)
             }

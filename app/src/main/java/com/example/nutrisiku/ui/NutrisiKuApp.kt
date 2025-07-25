@@ -2,21 +2,22 @@ package com.example.nutrisiku.ui
 
 import android.app.Application
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalSavedStateRegistryOwner
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.nutrisiku.data.HistoryRepository
+import com.example.nutrisiku.data.NutritionRepository
 import com.example.nutrisiku.ui.navigation.Screen
 import com.example.nutrisiku.ui.screen.CameraScreen
 import com.example.nutrisiku.ui.screen.DetectionResultScreen
 import com.example.nutrisiku.ui.screen.DetectionScreen
+import com.example.nutrisiku.ui.screen.EditHistoryScreen
 import com.example.nutrisiku.ui.screen.EditProfileScreen
 import com.example.nutrisiku.ui.screen.HistoryDetailScreen
 import com.example.nutrisiku.ui.screen.HistoryScreen
@@ -39,12 +40,8 @@ fun NutrisiKuApp(
 ) {
     val navController = rememberNavController()
     val application = LocalContext.current.applicationContext as Application
-    val owner = LocalSavedStateRegistryOwner.current
-
-    // PERUBAHAN: Bungkus pembuatan factory dengan 'remember'
-    val factory = remember(owner) {
-        ViewModelFactory(owner, application)
-    }
+    // Factory ini sekarang hanya untuk ViewModel global
+    val factory = ViewModelFactory(application)
 
     val profileViewModel: ProfileViewModel = viewModel(factory = factory)
     val historyViewModel: HistoryViewModel = viewModel(factory = factory)
@@ -142,23 +139,64 @@ fun NutrisiKuApp(
         composable(
             route = Screen.HistoryDetail.route,
             arguments = listOf(navArgument("historyId") { type = NavType.IntType })
-        ) {
-            // Gunakan factory yang sama untuk membuat HistoryDetailViewModel
-            val viewModel: HistoryDetailViewModel = viewModel(factory = factory)
+        ) { backStackEntry ->
+            // Buat factory khusus di sini yang bisa mengakses SavedStateHandle dari backStackEntry
+            val detailFactory = object : ViewModelProvider.Factory {
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    val historyRepository = HistoryRepository(application)
+                    val nutritionRepository = NutritionRepository(application)
+                    return HistoryDetailViewModel(
+                        application,
+                        backStackEntry.arguments, // Teruskan argumen navigasi
+                        historyRepository,
+                        nutritionRepository
+                    ) as T
+                }
+            }
+            val viewModel: HistoryDetailViewModel = viewModel(factory = detailFactory)
+
             HistoryDetailScreen(
                 viewModel = viewModel,
                 onBackClick = { navController.navigateUp() },
-                onSaveClick = {
-                    viewModel.updateHistory()
-                    navController.navigateUp()
-                },
                 onDeleteClick = {
                     viewModel.deleteHistory()
-                    navController.navigateUp()
+                    navController.popBackStack()
+                },
+                onEditClick = { historyId ->
+                    // Navigasi ke layar edit baru
+                    navController.navigate(Screen.EditHistory.createRoute(historyId))
                 },
                 navigateToHome = { navController.navigate(Screen.Home.route) },
                 navigateToDetection = { navController.navigate(Screen.Detection.route) },
                 navigateToHistory = { navController.navigate(Screen.History.route) }
+            )
+        }
+
+        composable(
+            route = Screen.EditHistory.route,
+            arguments = listOf(navArgument("historyId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            // Buat factory khusus di sini yang bisa mengakses SavedStateHandle dari backStackEntry
+            val detailFactory = object : ViewModelProvider.Factory {
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    val historyRepository = HistoryRepository(application)
+                    val nutritionRepository = NutritionRepository(application)
+                    return HistoryDetailViewModel(
+                        application,
+                        backStackEntry.arguments, // Teruskan argumen navigasi
+                        historyRepository,
+                        nutritionRepository
+                    ) as T
+                }
+            }
+            val viewModel: HistoryDetailViewModel = viewModel(factory = detailFactory)
+            EditHistoryScreen(
+                viewModel = viewModel,
+                onBackClick = { navController.navigateUp() },
+                onSaveClick = {
+                    viewModel.updateHistory()
+                    navController.popBackStack(Screen.History.route, false) // Kembali ke daftar riwayat
+                }
             )
         }
 
