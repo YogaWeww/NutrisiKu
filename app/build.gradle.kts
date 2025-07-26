@@ -91,6 +91,7 @@ dependencies {
 
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.tensorflow.lite.support)
     implementation(libs.tensorflow.lite.task.vision)
 
     implementation(libs.gson)
@@ -109,4 +110,7 @@ dependencies {
     // --- ACCOMPANIST PERMISSIONS ---
     // Mempermudah penanganan izin runtime
     implementation(libs.accompanist.permissions)
+    implementation(libs.text.recognition)
+    implementation(libs.object1.detection.custom)
+
 }

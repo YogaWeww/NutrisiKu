@@ -2,6 +2,7 @@ package com.example.nutrisiku.ui.viewmodel
 
 import android.app.Application
 import android.graphics.Bitmap
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.nutrisiku.data.DetectionResult
@@ -54,10 +55,10 @@ class DetectionViewModel(
         _uiState.update { it.copy(selectedBitmap = bitmap, isLoading = true) }
 
         viewModelScope.launch {
-            // Jalankan deteksi di background thread
+            Log.d("DEBUG_MODEL", "ViewModel: Memanggil FoodDetector.detect()")
             val detectionResults = foodDetector.detect(bitmap)
+            Log.d("DEBUG_MODEL", "ViewModel: Menerima ${detectionResults.size} hasil dari FoodDetector.")
 
-            // Proses hasil deteksi
             processDetections(detectionResults)
         }
     }
@@ -183,5 +184,4 @@ class DetectionViewModel(
         }
     }
 
-    // TODO: Tambahkan fungsi untuk menyimpan hasil ke riwayat
 }

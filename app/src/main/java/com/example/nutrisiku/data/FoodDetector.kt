@@ -2,46 +2,68 @@ package com.example.nutrisiku.data
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.util.Log
+import org.tensorflow.lite.support.image.ImageProcessor
 import org.tensorflow.lite.support.image.TensorImage
+import org.tensorflow.lite.task.core.BaseOptions
 import org.tensorflow.lite.task.vision.detector.ObjectDetector
 
 class FoodDetector(
     private val context: Context,
-    private val modelPath: String = "best_model.tflite", // Sesuaikan dengan nama file model Anda
-    private val scoreThreshold: Float = 0.5f // Ambang batas kepercayaan
+    private val modelPath: String = "best_model.tflite", // Pastikan nama ini sesuai
+    private val scoreThreshold: Float = 0.5f,
+    private val maxResults: Int = 5,
+    private val numThreads: Int = 4
 ) {
     private var objectDetector: ObjectDetector? = null
 
-    // Fungsi untuk menginisialisasi ObjectDetector
+    init {
+        setupObjectDetector()
+    }
+
     private fun setupObjectDetector() {
-        val options = ObjectDetector.ObjectDetectorOptions.builder()
-            .setMaxResults(5) // Maksimal 5 objek terdeteksi dalam satu gambar
-            .setScoreThreshold(scoreThreshold)
-            .build()
         try {
-            objectDetector = ObjectDetector.createFromFileAndOptions(context, modelPath, options)
-        } catch (e: Exception) {
-            e.printStackTrace()
+            val optionsBuilder =
+                ObjectDetector.ObjectDetectorOptions.builder()
+                    .setScoreThreshold(scoreThreshold)
+                    .setMaxResults(maxResults)
+
+            val baseOptionsBuilder =
+                BaseOptions.builder().setNumThreads(numThreads)
+            optionsBuilder.setBaseOptions(baseOptionsBuilder.build())
+
+            Log.d("DEBUG_MODEL", "FoodDetector: Mencoba memuat model dari path: $modelPath")
+            objectDetector = ObjectDetector.createFromFileAndOptions(context, modelPath, optionsBuilder.build())
+            Log.d("DEBUG_MODEL", "FoodDetector: Model berhasil dimuat.")
+
+        } catch (e: IllegalStateException) {
+            Log.e("DEBUG_MODEL", "FoodDetector: Gagal memuat model! Error: ${e.message}")
         }
     }
 
-    // Fungsi untuk menjalankan deteksi
     fun detect(bitmap: Bitmap): List<DetectionResult> {
         if (objectDetector == null) {
-            setupObjectDetector()
+            Log.e("DEBUG_MODEL", "FoodDetector: ObjectDetector null, proses deteksi dibatalkan.")
+            return emptyList()
         }
 
-        val image = TensorImage.fromBitmap(bitmap)
-        val results = objectDetector?.detect(image)
+        val imageProcessor = ImageProcessor.Builder().build()
+        val tensorImage = imageProcessor.process(TensorImage.fromBitmap(bitmap))
 
-        // Ubah hasil dari TensorFlow ke dalam data class kita
-        return results?.map {
-            val category = it.categories.first()
-            DetectionResult(
-                boundingBox = it.boundingBox,
-                label = category.label,
-                confidence = category.score
-            )
+        Log.d("DEBUG_MODEL", "FoodDetector: Memulai proses deteksi...")
+        val results = objectDetector?.detect(tensorImage)
+        Log.d("DEBUG_MODEL", "FoodDetector: Proses deteksi selesai. Ditemukan ${results?.size ?: 0} objek.")
+
+        return results?.mapNotNull { detection ->
+            // Ambil kategori dengan skor tertinggi
+            detection.categories.maxByOrNull { it.score }?.let { category ->
+                Log.d("DEBUG_MODEL", "  -> Ditemukan: ${category.label} (Confidence: ${category.score})")
+                DetectionResult(
+                    boundingBox = detection.boundingBox,
+                    label = category.label,
+                    confidence = category.score
+                )
+            }
         } ?: emptyList()
     }
 }

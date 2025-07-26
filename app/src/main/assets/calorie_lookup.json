@@ -1,174 +1,174 @@
 [
   {
-    "label": "apel",
+    "label": "Apple",
     "nama_tampilan": "Apel",
     "kalori_per_100g": 52,
     "porsi_standar_g": 180
   },
   {
-    "label": "ayam_goreng",
+    "label": "Ayam Goreng",
     "nama_tampilan": "Ayam Goreng",
     "kalori_per_100g": 260,
     "porsi_standar_g": 120
   },
   {
-    "label": "bakso",
+    "label": "Bakso",
     "nama_tampilan": "Bakso",
     "kalori_per_100g": 140,
     "porsi_standar_g": 250
   },
   {
-    "label": "biskuit_choco_chips",
-    "nama_tampilan": "Biskuit Choco Chips",
-    "kalori_per_100g": 500,
-    "porsi_standar_g": 20
-  },
-  {
-    "label": "burger",
-    "nama_tampilan": "Burger",
-    "kalori_per_100g": 295,
-    "porsi_standar_g": 200
-  },
-  {
-    "label": "capcay",
-    "nama_tampilan": "Capcay",
-    "kalori_per_100g": 60,
-    "porsi_standar_g": 200
-  },
-  {
-    "label": "donat",
-    "nama_tampilan": "Donat",
-    "kalori_per_100g": 420,
-    "porsi_standar_g": 50
-  },
-  {
-    "label": "ikan_goreng",
-    "nama_tampilan": "Ikan Goreng",
-    "kalori_per_100g": 200,
-    "porsi_standar_g": 150
-  },
-  {
-    "label": "kentang_goreng",
-    "nama_tampilan": "Kentang Goreng",
-    "kalori_per_100g": 312,
-    "porsi_standar_g": 100
-  },
-  {
-    "label": "kiwi",
-    "nama_tampilan": "Kiwi",
-    "kalori_per_100g": 61,
-    "porsi_standar_g": 75
-  },
-  {
-    "label": "mie_goreng",
-    "nama_tampilan": "Mie Goreng",
-    "kalori_per_100g": 150,
-    "porsi_standar_g": 200
-  },
-  {
-    "label": "nanas",
-    "nama_tampilan": "Nanas",
-    "kalori_per_100g": 50,
-    "porsi_standar_g": 150
-  },
-  {
-    "label": "nasi_goreng",
-    "nama_tampilan": "Nasi Goreng",
-    "kalori_per_100g": 175,
-    "porsi_standar_g": 200
-  },
-  {
-    "label": "nasi_putih",
-    "nama_tampilan": "Nasi Putih",
-    "kalori_per_100g": 130,
-    "porsi_standar_g": 150
-  },
-  {
-    "label": "nugget",
-    "nama_tampilan": "Nugget",
-    "kalori_per_100g": 290,
-    "porsi_standar_g": 80
-  },
-  {
-    "label": "pempek",
-    "nama_tampilan": "Pempek",
-    "kalori_per_100g": 170,
-    "porsi_standar_g": 150
-  },
-  {
-    "label": "pisang",
+    "label": "Banana",
     "nama_tampilan": "Pisang",
     "kalori_per_100g": 89,
     "porsi_standar_g": 120
   },
   {
-    "label": "pizza",
+    "label": "Burger",
+    "nama_tampilan": "Burger",
+    "kalori_per_100g": 295,
+    "porsi_standar_g": 200
+  },
+  {
+    "label": "Capcay",
+    "nama_tampilan": "Capcay",
+    "kalori_per_100g": 60,
+    "porsi_standar_g": 200
+  },
+  {
+    "label": "Chocolate Chip Cookie",
+    "nama_tampilan": "Biskuit Choco Chips",
+    "kalori_per_100g": 500,
+    "porsi_standar_g": 20
+  },
+  {
+    "label": "Donat",
+    "nama_tampilan": "Donat",
+    "kalori_per_100g": 420,
+    "porsi_standar_g": 50
+  },
+  {
+    "label": "Ikan Goreng",
+    "nama_tampilan": "Ikan Goreng",
+    "kalori_per_100g": 200,
+    "porsi_standar_g": 150
+  },
+  {
+    "label": "Kentang Goreng",
+    "nama_tampilan": "Kentang Goreng",
+    "kalori_per_100g": 312,
+    "porsi_standar_g": 100
+  },
+  {
+    "label": "Kiwi",
+    "nama_tampilan": "Kiwi",
+    "kalori_per_100g": 61,
+    "porsi_standar_g": 75
+  },
+  {
+    "label": "Mie Goreng",
+    "nama_tampilan": "Mie Goreng",
+    "kalori_per_100g": 150,
+    "porsi_standar_g": 200
+  },
+  {
+    "label": "Nasi Goreng",
+    "nama_tampilan": "Nasi Goreng",
+    "kalori_per_100g": 175,
+    "porsi_standar_g": 200
+  },
+  {
+    "label": "Nasi Putih",
+    "nama_tampilan": "Nasi Putih",
+    "kalori_per_100g": 130,
+    "porsi_standar_g": 150
+  },
+  {
+    "label": "Nugget",
+    "nama_tampilan": "Nugget",
+    "kalori_per_100g": 290,
+    "porsi_standar_g": 80
+  },
+  {
+    "label": "Pempek",
+    "nama_tampilan": "Pempek",
+    "kalori_per_100g": 170,
+    "porsi_standar_g": 150
+  },
+  {
+    "label": "Pineapples",
+    "nama_tampilan": "Nanas",
+    "kalori_per_100g": 50,
+    "porsi_standar_g": 150
+  },
+  {
+    "label": "Pizza",
     "nama_tampilan": "Pizza",
     "kalori_per_100g": 266,
     "porsi_standar_g": 120
   },
   {
-    "label": "rendang_sapi",
+    "label": "Rendang Sapi",
     "nama_tampilan": "Rendang Sapi",
     "kalori_per_100g": 195,
     "porsi_standar_g": 100
   },
   {
-    "label": "sate",
+    "label": "Sate",
     "nama_tampilan": "Sate",
     "kalori_per_100g": 160,
     "porsi_standar_g": 150
   },
   {
-    "label": "spaghetti",
+    "label": "Spaghetti",
     "nama_tampilan": "Spaghetti",
     "kalori_per_100g": 158,
     "porsi_standar_g": 220
   },
   {
-    "label": "steak",
+    "label": "Steak",
     "nama_tampilan": "Steak",
     "kalori_per_100g": 270,
     "porsi_standar_g": 200
   },
   {
-    "label": "stroberi",
+    "label": "Strawberry",
     "nama_tampilan": "Stroberi",
     "kalori_per_100g": 32,
     "porsi_standar_g": 150
   },
   {
-    "label": "tahu_goreng",
+    "label": "Tahu Goreng",
     "nama_tampilan": "Tahu Goreng",
     "kalori_per_100g": 115,
     "porsi_standar_g": 50
   },
   {
-    "label": "telur_goreng",
+    "label": "Telur Goreng",
     "nama_tampilan": "Telur Goreng",
     "kalori_per_100g": 196,
     "porsi_standar_g": 50
   },
   {
-    "label": "telur_rebus",
+    "label": "Telur Rebus",
     "nama_tampilan": "Telur Rebus",
     "kalori_per_100g": 155,
     "porsi_standar_g": 50
   },
   {
-    "label": "tempe_goreng",
+    "label": "Tempe Goreng",
     "nama_tampilan": "Tempe Goreng",
     "kalori_per_100g": 190,
     "porsi_standar_g": 50
   },
   {
-    "label": "terong_balado",
+    "label": "Terong Balado",
     "nama_tampilan": "Terong Balado",
     "kalori_per_100g": 90,
     "porsi_standar_g": 150
   },
   {
-    "label": "tumis_kangkung",
+    "label": "Tumis Kangkung",
     "nama_tampilan": "Tumis Kangkung",
     "kalori_per_100g": 50,
     "porsi_standar_g": 150
