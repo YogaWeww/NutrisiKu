@@ -33,8 +33,6 @@ class HistoryRepository(context: Context) {
         historyDao.deleteHistory(history)
     }
 
-
-
     // PERUBAHAN: Fungsi baru untuk mendapatkan kalori hari ini
     fun getTodaysCalories(): Flow<Int?> {
         val cal = Calendar.getInstance()

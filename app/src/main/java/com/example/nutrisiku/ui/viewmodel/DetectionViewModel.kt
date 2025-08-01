@@ -2,7 +2,9 @@ package com.example.nutrisiku.ui.viewmodel
 
 import android.app.Application
 import android.graphics.Bitmap
+import android.graphics.Matrix
 import android.util.Log
+import androidx.camera.core.ImageProxy
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.nutrisiku.data.DetectionResult
@@ -45,33 +47,49 @@ class DetectionViewModel(
     private val historyRepository: HistoryRepository
 ) : AndroidViewModel(application) {
 
+    // State utama untuk layar hasil akhir (DetectionResultScreen)
     private val _uiState = MutableStateFlow(DetectionUiState())
     val uiState = _uiState.asStateFlow()
+
     private val foodDetector = FoodDetector(application)
     private val nutritionData: Map<String, FoodNutrition> = nutritionRepository.getNutritionData()
 
-    // Fungsi yang dipanggil oleh UI saat gambar dipilih
-    fun onImageSelected(bitmap: Bitmap) {
-        _uiState.update { it.copy(selectedBitmap = bitmap, isLoading = true) }
+    // State untuk hasil mentah dari model (untuk overlay box)
+    private val _realtimeResults = MutableStateFlow<List<DetectionResult>>(emptyList())
+    val realtimeResults = _realtimeResults.asStateFlow()
 
-        viewModelScope.launch {
-            Log.d("DEBUG_MODEL", "ViewModel: Memanggil FoodDetector.detect()")
-            val detectionResults = foodDetector.detect(bitmap)
-            Log.d("DEBUG_MODEL", "ViewModel: Menerima ${detectionResults.size} hasil dari FoodDetector.")
+    // --- PERUBAHAN ---
+    // State baru untuk menampung hasil yang sudah diproses untuk UI real-time (kartu di bawah)
+    private val _realtimeUiState = MutableStateFlow(DetectionUiState())
+    val realtimeUiState = _realtimeUiState.asStateFlow()
 
-            processDetections(detectionResults)
+    private var lastAnalyzedTimestamp = 0L
+    private var currentFrameBitmap: Bitmap? = null // Untuk menyimpan frame gambar saat ini
+
+    fun analyzeFrame(imageProxy: ImageProxy) {
+        val currentTimestamp = System.currentTimeMillis()
+        if (currentTimestamp - lastAnalyzedTimestamp >= 1000) {
+            val rotationDegrees = imageProxy.imageInfo.rotationDegrees
+            val bitmap = imageProxy.toBitmap().rotate(rotationDegrees.toFloat())
+            currentFrameBitmap = bitmap // Simpan frame gambar saat ini
+
+            viewModelScope.launch(Dispatchers.Default) {
+                val results = foodDetector.detect(bitmap)
+                _realtimeResults.value = results // Update hasil mentah untuk overlay
+                processRealtimeDetections(results) // Proses hasil untuk ditampilkan di kartu UI
+            }
+            lastAnalyzedTimestamp = currentTimestamp
         }
+        imageProxy.close()
     }
 
-    private fun processDetections(results: List<DetectionResult>) {
+    // Fungsi baru untuk memproses hasil deteksi real-time
+    private fun processRealtimeDetections(results: List<DetectionResult>) {
         val foodItems = mutableListOf<DetectedFoodItem>()
         var totalCalories = 0
-
         results.forEach { result ->
-            // Cari data nutrisi berdasarkan label dari model
             val foodInfo = nutritionData[result.label]
             if (foodInfo != null) {
-                // Hitung kalori berdasarkan porsi standar
                 val calories = (foodInfo.kalori_per_100g / 100.0 * foodInfo.porsi_standar_g).toInt()
                 foodItems.add(
                     DetectedFoodItem(
@@ -84,7 +102,55 @@ class DetectionViewModel(
                 totalCalories += calories
             }
         }
+        // Update state UI real-time
+        _realtimeUiState.update {
+            it.copy(detectedItems = foodItems, totalCalories = totalCalories)
+        }
+    }
 
+    // --- FUNGSI BARU YANG SEBELUMNYA HILANG ---
+    // Fungsi yang dipanggil saat tombol centang (konfirmasi) ditekan
+    fun confirmRealtimeDetection() {
+        val confirmedState = _realtimeUiState.value
+        // Pindahkan state dari real-time ke state utama untuk diteruskan ke layar hasil
+        _uiState.update {
+            it.copy(
+                selectedBitmap = currentFrameBitmap,
+                detectedItems = confirmedState.detectedItems,
+                totalCalories = confirmedState.totalCalories,
+                isLoading = false
+            )
+        }
+    }
+
+    // Fungsi untuk deteksi dari galeri/kamera (capture tunggal)
+    fun onImageSelected(bitmap: Bitmap) {
+        _uiState.update { it.copy(selectedBitmap = bitmap, isLoading = true) }
+        viewModelScope.launch {
+            val detectionResults = foodDetector.detect(bitmap)
+            processDetections(detectionResults)
+        }
+    }
+
+    // Memproses hasil deteksi untuk state utama
+    private fun processDetections(results: List<DetectionResult>) {
+        val foodItems = mutableListOf<DetectedFoodItem>()
+        var totalCalories = 0
+        results.forEach { result ->
+            val foodInfo = nutritionData[result.label]
+            if (foodInfo != null) {
+                val calories = (foodInfo.kalori_per_100g / 100.0 * foodInfo.porsi_standar_g).toInt()
+                foodItems.add(
+                    DetectedFoodItem(
+                        name = foodInfo.nama_tampilan,
+                        standardPortion = foodInfo.porsi_standar_g,
+                        calories = calories,
+                        originalResult = result
+                    )
+                )
+                totalCalories += calories
+            }
+        }
         _uiState.update {
             it.copy(
                 detectedItems = foodItems,
@@ -98,16 +164,13 @@ class DetectionViewModel(
         viewModelScope.launch {
             val currentState = _uiState.value
             val bitmapToSave = currentState.selectedBitmap
-
             if (currentState.detectedItems.isNotEmpty() && bitmapToSave != null) {
-                // PERUBAHAN: Panggil fungsi untuk menyimpan gambar dan dapatkan path-nya
                 val imagePath = saveBitmapToInternalStorage(bitmapToSave)
-
                 if (imagePath != null) {
                     val historyEntity = HistoryEntity(
                         timestamp = System.currentTimeMillis(),
                         sessionLabel = getSessionLabel(),
-                        imagePath = imagePath, // Gunakan path yang sebenarnya
+                        imagePath = imagePath,
                         totalCalories = currentState.totalCalories,
                         foodItems = currentState.detectedItems.map {
                             HistoryFoodItem(
@@ -123,22 +186,22 @@ class DetectionViewModel(
         }
     }
 
-    // PERUBAHAN: Fungsi helper baru untuk menyimpan Bitmap
     private suspend fun saveBitmapToInternalStorage(bitmap: Bitmap): String? {
-        return withContext(Dispatchers.IO) { // Jalankan operasi file di background thread
+        return withContext(Dispatchers.IO) {
             val filename = "detection_${System.currentTimeMillis()}.jpg"
             val file = File(getApplication<Application>().filesDir, filename)
             try {
                 FileOutputStream(file).use { out ->
-                    bitmap.compress(Bitmap.CompressFormat.JPEG, 85, out) // Kompres gambar
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 85, out)
                 }
-                file.absolutePath // Kembalikan path absolut dari file yang disimpan
+                file.absolutePath
             } catch (e: IOException) {
                 e.printStackTrace()
                 null
             }
         }
     }
+
     private fun getSessionLabel(): String {
         val calendar = Calendar.getInstance()
         return when (calendar.get(Calendar.HOUR_OF_DAY)) {
@@ -149,39 +212,35 @@ class DetectionViewModel(
         }
     }
 
-    // PERUBAHAN: Fungsi baru untuk memperbarui porsi
     fun updatePortion(itemIndex: Int, newPortion: Int) {
         _uiState.update { currentState ->
             val updatedItems = currentState.detectedItems.toMutableList()
             if (itemIndex in updatedItems.indices) {
                 val oldItem = updatedItems[itemIndex]
-
-                // Cari data nutrisi asli
                 val foodInfo = nutritionData[oldItem.originalResult.label]
                 if (foodInfo != null) {
-                    // Hitung ulang kalori berdasarkan porsi baru
                     val newCalories = (foodInfo.kalori_per_100g / 100.0 * newPortion).toInt()
-
-                    // Ganti item lama dengan yang baru
                     updatedItems[itemIndex] = oldItem.copy(
                         standardPortion = newPortion,
                         calories = newCalories
                     )
-
-                    // Hitung ulang total kalori
                     val newTotalCalories = updatedItems.sumOf { it.calories }
-
                     currentState.copy(
                         detectedItems = updatedItems,
                         totalCalories = newTotalCalories
                     )
                 } else {
-                    currentState // Kembalikan state lama jika data tidak ditemukan
+                    currentState
                 }
             } else {
-                currentState // Kembalikan state lama jika indeks tidak valid
+                currentState
             }
         }
     }
 
+    private fun Bitmap.rotate(degrees: Float): Bitmap {
+        val matrix = Matrix().apply { postRotate(degrees) }
+        return Bitmap.createBitmap(this, 0, 0, width, height, matrix, true)
+    }
 }
+

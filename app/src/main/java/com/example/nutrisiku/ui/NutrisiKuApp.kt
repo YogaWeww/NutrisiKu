@@ -40,16 +40,9 @@ fun NutrisiKuApp(
     val navController = rememberNavController()
     val application = LocalContext.current.applicationContext as Application
 
-    // Dapatkan viewModelStoreOwner dari komposisi lokal
-    val viewModelStoreOwner = checkNotNull(LocalViewModelStoreOwner.current) {
-        "No ViewModelStoreOwner was provided by LocalViewModelStoreOwner"
-    }
+    // PERBAIKAN: Factory sekarang hanya butuh application context, lebih sederhana.
+    val factory = ViewModelFactory(application)
 
-    // SOLUSI: Cast owner ke SavedStateRegistryOwner.
-    // Di level aplikasi, owner ini adalah Activity, yang mengimplementasikan interface ini.
-    val factory = ViewModelFactory(viewModelStoreOwner as SavedStateRegistryOwner, application)
-
-    // Gunakan factory yang sama untuk semua ViewModel
     val profileViewModel: ProfileViewModel = viewModel(factory = factory)
     val historyViewModel: HistoryViewModel = viewModel(factory = factory)
     val detectionViewModel: DetectionViewModel = viewModel(factory = factory)
@@ -81,10 +74,8 @@ fun NutrisiKuApp(
 
         composable(Screen.ProfileInput.route) {
             ProfileInputScreen(
-                // Teruskan ViewModel ke layar
                 viewModel = profileViewModel,
                 onConfirmClick = {
-                    // Panggil fungsi simpan di ViewModel sebelum navigasi
                     profileViewModel.saveProfile()
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.ProfileInput.route) { inclusive = true }
@@ -95,8 +86,8 @@ fun NutrisiKuApp(
 
         composable(Screen.Home.route) {
             HomeScreen(
-                profileViewModel = profileViewModel, // Teruskan ProfileViewModel
-                historyViewModel = historyViewModel, // Teruskan HistoryViewModel
+                profileViewModel = profileViewModel,
+                historyViewModel = historyViewModel,
                 navigateToProfile = { navController.navigate(Screen.Profile.route) },
                 navigateToDetection = { navController.navigate(Screen.Detection.route) },
                 navigateToHistory = { navController.navigate(Screen.History.route) }
@@ -105,8 +96,8 @@ fun NutrisiKuApp(
 
         composable(Screen.Profile.route) {
             ProfileScreen(
-                profileViewModel = profileViewModel, // Teruskan ProfileViewModel
-                historyViewModel = historyViewModel, // PERUBAHAN: Teruskan HistoryViewModel
+                profileViewModel = profileViewModel,
+                historyViewModel = historyViewModel,
                 onEditProfileClick = { navController.navigate(Screen.EditProfile.route) },
                 onBackClick = { navController.navigateUp() },
                 navigateToHome = { navController.navigate(Screen.Home.route) },
@@ -117,13 +108,12 @@ fun NutrisiKuApp(
 
         composable(Screen.EditProfile.route) {
             EditProfileScreen(
-                viewModel = profileViewModel, // Teruskan ViewModel
+                viewModel = profileViewModel,
                 onBackClick = { navController.navigateUp() },
                 onSaveClick = {
-                    profileViewModel.saveProfile() // Panggil fungsi simpan
-                    navController.navigateUp() // Kembali ke profil
+                    profileViewModel.saveProfile()
+                    navController.navigateUp()
                 },
-                // Menambahkan parameter navigasi untuk BottomNavBar
                 navigateToHome = { navController.navigate(Screen.Home.route) },
                 navigateToDetection = { navController.navigate(Screen.Detection.route) },
                 navigateToHistory = { navController.navigate(Screen.History.route) }
@@ -132,12 +122,11 @@ fun NutrisiKuApp(
 
         composable(Screen.History.route) {
             HistoryScreen(
-                viewModel = historyViewModel, // Teruskan ViewModel
+                viewModel = historyViewModel,
                 onBackClick = { navController.navigateUp() },
                 onHistoryItemClick = { historyId ->
                     navController.navigate(Screen.HistoryDetail.createRoute(historyId))
                 },
-                // Menambahkan parameter navigasi untuk BottomNavBar
                 navigateToHome = { navController.navigate(Screen.Home.route) },
                 navigateToDetection = { navController.navigate(Screen.Detection.route) }
             )
@@ -158,7 +147,6 @@ fun NutrisiKuApp(
                     navController.popBackStack()
                 },
                 onEditClick = { historyId ->
-                    // Navigasi ke layar edit baru
                     navController.navigate(Screen.EditHistory.createRoute(historyId))
                 },
                 navigateToHome = { navController.navigate(Screen.Home.route) },
@@ -178,7 +166,7 @@ fun NutrisiKuApp(
                 onBackClick = { navController.navigateUp() },
                 onSaveClick = {
                     viewModel.updateHistory()
-                    navController.popBackStack(Screen.History.route, false) // Kembali ke daftar riwayat
+                    navController.popBackStack(Screen.History.route, false)
                 }
             )
         }
@@ -187,7 +175,6 @@ fun NutrisiKuApp(
             DetectionScreen(
                 viewModel = detectionViewModel,
                 onBackClick = { navController.navigateUp() },
-                onCameraClick = { navController.navigate(Screen.Camera.route) },
                 onManualClick = { navController.navigate(Screen.ManualInput.route) },
                 navigateToResult = { navController.navigate(Screen.DetectionResult.route) }
             )
@@ -195,10 +182,10 @@ fun NutrisiKuApp(
 
         composable(Screen.DetectionResult.route) {
             DetectionResultScreen(
-                viewModel = detectionViewModel, // Teruskan ViewModel
+                viewModel = detectionViewModel,
                 onBackClick = { navController.navigateUp() },
                 onSaveClick = {
-                    detectionViewModel.saveDetectionToHistory() // Panggil fungsi simpan
+                    detectionViewModel.saveDetectionToHistory()
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Home.route) { inclusive = true }
                     }
@@ -214,11 +201,9 @@ fun NutrisiKuApp(
                     navController.navigateUp()
                 },
                 onSaveClick = {
-                    // Navigasi terjadi di sini setelah ViewModel mengkonfirmasi sukses
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Home.route) { inclusive = true }
                     }
-                    // Bersihkan state setelah navigasi
                     manualInputViewModel.clearState()
                 }
             )
@@ -228,9 +213,7 @@ fun NutrisiKuApp(
             CameraScreen(
                 viewModel = detectionViewModel,
                 navigateToResult = {
-                    // Kembali ke hasil setelah foto diambil
                     navController.navigate(Screen.DetectionResult.route) {
-                        // Hapus layar kamera dari back stack
                         popUpTo(Screen.Camera.route) { inclusive = true }
                     }
                 }

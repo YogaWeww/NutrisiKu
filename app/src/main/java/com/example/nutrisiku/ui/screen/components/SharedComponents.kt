@@ -1,6 +1,13 @@
 package com.example.nutrisiku.ui.screen.components
 
 import android.graphics.Bitmap
+import android.graphics.RectF
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
+import androidx.camera.view.TransformExperimental
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -17,17 +24,21 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.Divider
 import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
+import androidx.compose.material.OutlinedButton
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.DirectionsRun
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Wc
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
@@ -41,6 +52,8 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,35 +65,26 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil.compose.AsyncImage
 import com.example.nutrisiku.R
 import com.example.nutrisiku.data.DetectionResult
 import com.example.nutrisiku.ui.navigation.Screen
+import com.example.nutrisiku.ui.viewmodel.DetectionViewModel
 import java.io.File
-
-
-@Composable
-fun DetectedItem(name: String, calorie: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Column {
-            Text(name, style = MaterialTheme.typography.bodyLarge)
-            Text(calorie, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
-        }
-        IconButton(onClick = { /* TODO: Aksi ubah porsi/hapus */ }) {
-            Icon(Icons.Default.MoreVert, contentDescription = "Opsi")
-        }
-    }
-}
+import java.util.concurrent.Executors
+import kotlin.math.min
 
 @Composable
 fun NutrisiKuBottomNavBar(
@@ -365,6 +369,201 @@ fun CalorieCard(
                     .align(Alignment.End)
                     .padding(top = 8.dp)
             )
+        }
+    }
+}
+@Composable
+fun RealtimeCameraView(
+    modifier: Modifier = Modifier,
+    viewModel: DetectionViewModel
+) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val detectionResults by viewModel.realtimeResults.collectAsState()
+    val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
+    val previewView = remember { PreviewView(context) }
+
+    LaunchedEffect(Unit) {
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+        cameraProviderFuture.addListener({
+            val cameraProvider = cameraProviderFuture.get()
+            val preview = Preview.Builder().build().also {
+                it.setSurfaceProvider(previewView.surfaceProvider)
+            }
+            val imageAnalyzer = ImageAnalysis.Builder()
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .build()
+                .also {
+                    it.setAnalyzer(cameraExecutor) { imageProxy ->
+                        viewModel.analyzeFrame(imageProxy)
+                    }
+                }
+            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+            try {
+                cameraProvider.unbindAll()
+                cameraProvider.bindToLifecycle(
+                    lifecycleOwner, cameraSelector, preview, imageAnalyzer
+                )
+            } catch (exc: Exception) {
+                // Handle error
+            }
+        }, ContextCompat.getMainExecutor(context))
+    }
+
+    Box(modifier = modifier) {
+        AndroidView({ previewView }, modifier = Modifier.fillMaxSize())
+        OverlayCanvas(
+            results = detectionResults,
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+}
+
+@Composable
+fun OverlayCanvas(
+    results: List<DetectionResult>,
+    modifier: Modifier = Modifier
+) {
+    Canvas(modifier = modifier) {
+        val modelInputWidth = 320f
+        val modelInputHeight = 320f
+        val canvasWidth = size.width
+        val canvasHeight = size.height
+        val scaleW = canvasWidth / modelInputWidth
+        val scaleH = canvasHeight / modelInputHeight
+        val scale = min(scaleW, scaleH)
+        val offsetX = (canvasWidth - modelInputWidth * scale) / 2
+        val offsetY = (canvasHeight - modelInputHeight * scale) / 2
+
+        results.forEach { result ->
+            val rect = result.boundingBox
+            val scaledLeft = rect.left * scale + offsetX
+            val scaledTop = rect.top * scale + offsetY
+            val scaledRight = rect.right * scale + offsetX
+            val scaledBottom = rect.bottom * scale + offsetY
+
+            drawRect(
+                color = Color.Red,
+                topLeft = Offset(scaledLeft, scaledTop),
+                size = Size(scaledRight - scaledLeft, scaledBottom - scaledTop),
+                style = Stroke(width = 2.dp.toPx())
+            )
+
+            drawContext.canvas.nativeCanvas.apply {
+                val text = "${result.label} (${"%.2f".format(result.confidence)})"
+                val paint = android.graphics.Paint().apply {
+                    color = android.graphics.Color.WHITE
+                    textSize = 16.sp.toPx()
+                    textAlign = android.graphics.Paint.Align.LEFT
+                }
+                val bgPaint = android.graphics.Paint().apply {
+                    color = android.graphics.Color.RED
+                    style = android.graphics.Paint.Style.FILL
+                }
+                val textBounds = android.graphics.Rect()
+                paint.getTextBounds(text, 0, text.length, textBounds)
+                val textBgLeft = scaledLeft
+                val textBgTop = scaledTop - textBounds.height() - 8.dp.toPx()
+                val textBgRight = scaledLeft + textBounds.width() + 8.dp.toPx()
+                val textBgBottom = scaledTop
+                drawRect(textBgLeft, textBgTop, textBgRight, textBgBottom, bgPaint)
+                drawText(text, textBgLeft + 4.dp.toPx(), textBgBottom - 4.dp.toPx(), paint)
+            }
+        }
+    }
+}
+
+@Composable
+fun DetectionResultCard(
+    modifier: Modifier = Modifier,
+    viewModel: DetectionViewModel,
+    onManualClick: () -> Unit,
+    onGalleryClick: () -> Unit // Parameter baru
+) {
+    val uiState by viewModel.realtimeUiState.collectAsState()
+
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                "Hasil Deteksi",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+            if (uiState.detectedItems.isEmpty()) {
+                Text(
+                    "Arahkan kamera ke makanan...",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
+            } else {
+                uiState.detectedItems.forEach { item ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("${item.name} (${item.standardPortion}g)")
+                        Text("${item.calories} KKAL")
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+            }
+
+            Divider(modifier = Modifier.padding(vertical = 8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Total Estimasi Kalori", fontWeight = FontWeight.Bold)
+                Text("${uiState.totalCalories} KKAL", fontWeight = FontWeight.Bold)
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // PERBAIKAN: Tambahkan Row untuk dua tombol
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onGalleryClick, // Hubungkan aksi klik
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.PhotoLibrary, contentDescription = "Galeri", modifier = Modifier.size(ButtonDefaults.IconSize))
+                    Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
+                    Text("Galeri")
+                }
+                OutlinedButton(
+                    onClick = onManualClick,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.Edit, contentDescription = "Input Manual", modifier = Modifier.size(ButtonDefaults.IconSize))
+                    Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
+                    Text("Manual")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PermissionDeniedView(onRequestPermission: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text("Izin kamera diperlukan untuk fitur ini.")
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(onClick = onRequestPermission) {
+            Text("Berikan Izin")
         }
     }
 }
