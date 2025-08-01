@@ -3,16 +3,14 @@ package com.example.nutrisiku.ui
 import android.app.Application
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.nutrisiku.data.HistoryRepository
-import com.example.nutrisiku.data.NutritionRepository
+import androidx.savedstate.SavedStateRegistryOwner
 import com.example.nutrisiku.ui.navigation.Screen
 import com.example.nutrisiku.ui.screen.CameraScreen
 import com.example.nutrisiku.ui.screen.DetectionResultScreen
@@ -34,15 +32,24 @@ import com.example.nutrisiku.ui.viewmodel.ManualInputViewModel
 import com.example.nutrisiku.ui.viewmodel.ProfileViewModel
 import com.example.nutrisiku.ui.viewmodel.ViewModelFactory
 
+
 @Composable
 fun NutrisiKuApp(
     startDestination: String // Terima start destination sebagai parameter
 ) {
     val navController = rememberNavController()
     val application = LocalContext.current.applicationContext as Application
-    // Factory ini sekarang hanya untuk ViewModel global
-    val factory = ViewModelFactory(application)
 
+    // Dapatkan viewModelStoreOwner dari komposisi lokal
+    val viewModelStoreOwner = checkNotNull(LocalViewModelStoreOwner.current) {
+        "No ViewModelStoreOwner was provided by LocalViewModelStoreOwner"
+    }
+
+    // SOLUSI: Cast owner ke SavedStateRegistryOwner.
+    // Di level aplikasi, owner ini adalah Activity, yang mengimplementasikan interface ini.
+    val factory = ViewModelFactory(viewModelStoreOwner as SavedStateRegistryOwner, application)
+
+    // Gunakan factory yang sama untuk semua ViewModel
     val profileViewModel: ProfileViewModel = viewModel(factory = factory)
     val historyViewModel: HistoryViewModel = viewModel(factory = factory)
     val detectionViewModel: DetectionViewModel = viewModel(factory = factory)
@@ -140,20 +147,8 @@ fun NutrisiKuApp(
             route = Screen.HistoryDetail.route,
             arguments = listOf(navArgument("historyId") { type = NavType.IntType })
         ) { backStackEntry ->
-            // Buat factory khusus di sini yang bisa mengakses SavedStateHandle dari backStackEntry
-            val detailFactory = object : ViewModelProvider.Factory {
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    val historyRepository = HistoryRepository(application)
-                    val nutritionRepository = NutritionRepository(application)
-                    return HistoryDetailViewModel(
-                        application,
-                        backStackEntry.arguments, // Teruskan argumen navigasi
-                        historyRepository,
-                        nutritionRepository
-                    ) as T
-                }
-            }
-            val viewModel: HistoryDetailViewModel = viewModel(factory = detailFactory)
+            // Sekarang kita bisa menggunakan factory yang sama karena sudah di-setup dengan benar
+            val viewModel: HistoryDetailViewModel = viewModel(factory = factory)
 
             HistoryDetailScreen(
                 viewModel = viewModel,
@@ -176,20 +171,8 @@ fun NutrisiKuApp(
             route = Screen.EditHistory.route,
             arguments = listOf(navArgument("historyId") { type = NavType.IntType })
         ) { backStackEntry ->
-            // Buat factory khusus di sini yang bisa mengakses SavedStateHandle dari backStackEntry
-            val detailFactory = object : ViewModelProvider.Factory {
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    val historyRepository = HistoryRepository(application)
-                    val nutritionRepository = NutritionRepository(application)
-                    return HistoryDetailViewModel(
-                        application,
-                        backStackEntry.arguments, // Teruskan argumen navigasi
-                        historyRepository,
-                        nutritionRepository
-                    ) as T
-                }
-            }
-            val viewModel: HistoryDetailViewModel = viewModel(factory = detailFactory)
+            // Gunakan factory yang sama di sini juga
+            val viewModel: HistoryDetailViewModel = viewModel(factory = factory)
             EditHistoryScreen(
                 viewModel = viewModel,
                 onBackClick = { navController.navigateUp() },
@@ -200,7 +183,6 @@ fun NutrisiKuApp(
             )
         }
 
-        // Di dalam file NutrisiKuApp.kt
         composable(Screen.Detection.route) {
             DetectionScreen(
                 viewModel = detectionViewModel,
@@ -216,7 +198,7 @@ fun NutrisiKuApp(
                 viewModel = detectionViewModel, // Teruskan ViewModel
                 onBackClick = { navController.navigateUp() },
                 onSaveClick = {
-                    // TODO: Simpan ke riwayat
+                    detectionViewModel.saveDetectionToHistory() // Panggil fungsi simpan
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Home.route) { inclusive = true }
                     }

@@ -110,7 +110,4 @@ dependencies {
     // --- ACCOMPANIST PERMISSIONS ---
     // Mempermudah penanganan izin runtime
     implementation(libs.accompanist.permissions)
-    implementation(libs.text.recognition)
-    implementation(libs.object1.detection.custom)
-
 }

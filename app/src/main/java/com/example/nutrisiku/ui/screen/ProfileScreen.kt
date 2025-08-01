@@ -61,12 +61,12 @@ import com.example.nutrisiku.R
 import com.example.nutrisiku.ui.navigation.Screen
 import com.example.nutrisiku.ui.screen.components.ActivityLevelDropdown
 import com.example.nutrisiku.ui.screen.components.CalorieCard
+import com.example.nutrisiku.ui.screen.components.GenderDropdown
 import com.example.nutrisiku.ui.screen.components.NutrisiKuBottomNavBar
 import com.example.nutrisiku.ui.viewmodel.HistoryViewModel
 import com.example.nutrisiku.ui.viewmodel.ProfileViewModel
 import java.io.File
 
-// Halaman utama untuk menampilkan profil
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
@@ -193,7 +193,6 @@ fun EditProfileButton(onClick: () -> Unit) {
     }
 }
 
-// Halaman untuk mengedit profil
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProfileScreen(
@@ -267,6 +266,7 @@ fun EditProfileScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
 
+            // PERBAIKAN: Panggil GenderDropdown dari SharedComponents
             GenderDropdown(
                 selectedGender = uiState.gender,
                 onGenderSelected = viewModel::onGenderChange
@@ -292,58 +292,3 @@ fun EditProfileScreen(
         }
     }
 }
-
-// Modifikasi Dropdown agar bisa dikontrol oleh ViewModel
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun GenderDropdown(
-    selectedGender: String,
-    onGenderSelected: (String) -> Unit
-) {
-    var isExpanded by remember { mutableStateOf(false) }
-    val genderOptions = listOf("Pria", "Wanita")
-
-    ExposedDropdownMenuBox(
-        expanded = isExpanded,
-        onExpandedChange = { isExpanded = it }
-    ) {
-        OutlinedTextField(
-            value = selectedGender,
-            onValueChange = {},
-            readOnly = true,
-            // ...
-        )
-        ExposedDropdownMenu(
-            expanded = isExpanded,
-            onDismissRequest = { isExpanded = false }
-        ) {
-            genderOptions.forEach { gender ->
-                DropdownMenuItem(
-                    text = { Text(gender) },
-                    onClick = {
-                        onGenderSelected(gender) // Panggil fungsi dari ViewModel
-                        isExpanded = false
-                    }
-                )
-            }
-        }
-    }
-}
-
-
-
-//@Preview(showBackground = true, device = "id:pixel_5")
-//@Composable
-//fun ProfileScreenPreview() {
-//    NutrisiKuTheme {
-//        ProfileScreen(onEditProfileClick = {}, onBackClick = {})
-//    }
-//}
-//
-//@Preview(showBackground = true, device = "id:pixel_5")
-//@Composable
-//fun EditProfileScreenPreview() {
-//    NutrisiKuTheme {
-//        EditProfileScreen(onBackClick = {}, onSaveClick = {})
-//    }
-//}

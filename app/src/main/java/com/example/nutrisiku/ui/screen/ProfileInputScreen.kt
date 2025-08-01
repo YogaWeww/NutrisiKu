@@ -17,6 +17,7 @@ import com.example.nutrisiku.ui.screen.components.GenderDropdown
 import com.example.nutrisiku.ui.theme.NutrisiKuTheme
 import com.example.nutrisiku.ui.viewmodel.ProfileViewModel
 
+
 @Composable
 fun ProfileInputScreen(
     viewModel: ProfileViewModel, // Terima ViewModel sebagai parameter
@@ -85,7 +86,11 @@ fun ProfileInputScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            GenderDropdown()
+            // PERBAIKAN: Gunakan GenderDropdown yang sudah benar
+            GenderDropdown(
+                selectedGender = uiState.gender,
+                onGenderSelected = viewModel::onGenderChange
+            )
             Spacer(modifier = Modifier.height(8.dp))
 
             ActivityLevelDropdown(
@@ -114,12 +119,3 @@ fun ProfileInputScreen(
         }
     }
 }
-
-
-//@Preview(showBackground = true, device = "id:pixel_5")
-//@Composable
-//fun ProfileInputScreenPreview() {
-//    NutrisiKuTheme {
-//        ProfileInputScreen(onConfirmClick = {})
-//    }
-//}

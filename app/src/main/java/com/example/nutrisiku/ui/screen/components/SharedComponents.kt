@@ -166,15 +166,14 @@ fun HistoryEntryCard(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // PERUBAHAN: Gunakan AsyncImage untuk memuat gambar dari file
             AsyncImage(
-                model = File(imagePath), // Muat gambar dari file
+                model = File(imagePath),
                 contentDescription = session,
                 modifier = Modifier
                     .size(56.dp)
                     .clip(RoundedCornerShape(12.dp)),
                 contentScale = ContentScale.Crop,
-                placeholder = painterResource(id = R.drawable.logo_nutrisiku) // Tampilkan logo saat memuat
+                placeholder = painterResource(id = R.drawable.logo_nutrisiku)
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -185,11 +184,14 @@ fun HistoryEntryCard(
     }
 }
 
+// PERBAIKAN: GenderDropdown dipindahkan ke sini dan diberi parameter
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GenderDropdown() {
+fun GenderDropdown(
+    selectedGender: String,
+    onGenderSelected: (String) -> Unit
+) {
     var isExpanded by remember { mutableStateOf(false) }
-    var selectedGender by remember { mutableStateOf("Pria") }
     val genderOptions = listOf("Pria", "Wanita")
 
     ExposedDropdownMenuBox(
@@ -220,7 +222,7 @@ fun GenderDropdown() {
                 DropdownMenuItem(
                     text = { androidx.compose.material3.Text(gender) },
                     onClick = {
-                        selectedGender = gender
+                        onGenderSelected(gender)
                         isExpanded = false
                     }
                 )
@@ -229,7 +231,6 @@ fun GenderDropdown() {
     }
 }
 
-// PERBAIKAN: Menambahkan parameter ke ActivityLevelDropdown
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ActivityLevelDropdown(
@@ -262,7 +263,7 @@ fun ActivityLevelDropdown(
                 DropdownMenuItem(
                     text = { Text(activity) },
                     onClick = {
-                        onActivitySelected(activity) // Panggil fungsi dari ViewModel
+                        onActivitySelected(activity)
                         isExpanded = false
                     }
                 )
@@ -285,7 +286,6 @@ fun ImageWithBoundingBoxes(
             modifier = Modifier.fillMaxSize()
         )
 
-        // Canvas untuk menggambar bounding box di atas gambar
         Canvas(modifier = Modifier.fillMaxSize()) {
             val scaleX = size.width / bitmap.width
             val scaleY = size.height / bitmap.height
@@ -293,7 +293,7 @@ fun ImageWithBoundingBoxes(
             detectionResults.forEach { result ->
                 val rect = result.boundingBox
                 drawRect(
-                    color = Color.Red, // Anda bisa menggunakan warna dari tema
+                    color = Color.Red,
                     topLeft = Offset(rect.left * scaleX, rect.top * scaleY),
                     size = Size((rect.right - rect.left) * scaleX, (rect.bottom - rect.top) * scaleY),
                     style = Stroke(width = 2.dp.toPx())
@@ -311,7 +311,6 @@ fun CalorieCard(
     modifier: Modifier = Modifier
 ) {
     val remaining = total - consumed
-    // Hindari pembagian dengan nol jika TDEE belum dihitung
     val progress = if (total > 0) consumed.toFloat() / total.toFloat() else 0f
 
     Card(
@@ -351,7 +350,7 @@ fun CalorieCard(
             }
             Spacer(modifier = Modifier.height(12.dp))
             LinearProgressIndicator(
-                progress = { progress }, // Gunakan progress dinamis
+                progress = { progress },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(12.dp)
@@ -360,7 +359,7 @@ fun CalorieCard(
                 trackColor = Color.White
             )
             Text(
-                text = "$remaining KKAL TERSISA", // Tampilkan sisa kalori dinamis
+                text = "$remaining KKAL TERSISA",
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier
                     .align(Alignment.End)
