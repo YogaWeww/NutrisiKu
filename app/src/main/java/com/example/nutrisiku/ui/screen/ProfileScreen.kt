@@ -128,7 +128,7 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             AsyncImage(
-                model = if (uiState.imagePath.isNotEmpty()) File(uiState.imagePath) else R.drawable.logo_nutrisiku,
+                model = if (uiState.imagePath.isNotEmpty()) File(uiState.imagePath) else R.drawable.default_profile,
                 contentDescription = "Foto Profil",
                 modifier = Modifier
                     .size(120.dp)

@@ -1,13 +1,11 @@
 package com.example.nutrisiku.ui.screen.components
 
 import android.graphics.Bitmap
-import android.graphics.RectF
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.camera.view.TransformExperimental
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -24,10 +22,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.ButtonDefaults
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Divider
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Icon
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.OutlinedButton
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
@@ -388,7 +391,7 @@ fun RealtimeCameraView(
         cameraProviderFuture.addListener({
             val cameraProvider = cameraProviderFuture.get()
             val preview = Preview.Builder().build().also {
-                it.setSurfaceProvider(previewView.surfaceProvider)
+                it.surfaceProvider = previewView.surfaceProvider
             }
             val imageAnalyzer = ImageAnalysis.Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
