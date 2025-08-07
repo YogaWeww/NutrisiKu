@@ -33,8 +33,8 @@ import androidx.compose.material.OutlinedButton
 //noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.DirectionsRun
 import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.DirectionsRun
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
@@ -256,7 +256,7 @@ fun ActivityLevelDropdown(
             onValueChange = {},
             readOnly = true,
             label = { Text("Tingkat Aktivitas Harian") },
-            leadingIcon = { Icon(Icons.Default.DirectionsRun, contentDescription = null) },
+            leadingIcon = { Icon(Icons.AutoMirrored.Filled.DirectionsRun, contentDescription = null) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded) },
             modifier = Modifier
                 .fillMaxWidth()
@@ -407,7 +407,7 @@ fun RealtimeCameraView(
                 cameraProvider.bindToLifecycle(
                     lifecycleOwner, cameraSelector, preview, imageAnalyzer
                 )
-            } catch (exc: Exception) {
+            } catch (_: Exception) {
                 // Handle error
             }
         }, ContextCompat.getMainExecutor(context))

@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.example.nutrisiku.ui.screen
 
 import androidx.compose.foundation.Image

@@ -2,7 +2,7 @@ package com.example.nutrisiku.ui
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.viewModels // Import ini
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -11,10 +11,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
-import androidx.lifecycle.lifecycleScope
 import com.example.nutrisiku.ui.theme.NutrisiKuTheme
 import com.example.nutrisiku.ui.viewmodel.MainViewModel
-import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 

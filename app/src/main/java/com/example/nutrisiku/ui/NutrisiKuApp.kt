@@ -3,14 +3,12 @@ package com.example.nutrisiku.ui
 import android.app.Application
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import androidx.savedstate.SavedStateRegistryOwner
 import com.example.nutrisiku.ui.navigation.Screen
 import com.example.nutrisiku.ui.screen.CameraScreen
 import com.example.nutrisiku.ui.screen.DetectionResultScreen
