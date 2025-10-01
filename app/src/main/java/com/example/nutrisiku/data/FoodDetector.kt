@@ -56,11 +56,9 @@ class FoodDetector(
         val originalWidth = bitmap.width
         val originalHeight = bitmap.height
 
-        // PERBAIKAN #1: Tambahkan Normalisasi Input
-        // Model YOLOv8 mengharapkan nilai piksel antara 0.0 dan 1.0.
         val imageProcessor = ImageProcessor.Builder()
             .add(ResizeWithCropOrPadOp(modelInputHeight, modelInputWidth))
-            .add(NormalizeOp(0.0f, 255.0f)) // Mengubah piksel [0, 255] menjadi [0.0, 1.0]
+            .add(NormalizeOp(0.0f, 255.0f))
             .build()
 
         val tensorImage = TensorImage(DataType.FLOAT32)
@@ -90,13 +88,10 @@ class FoodDetector(
         }
 
         val detections = mutableListOf<DetectionResult>()
-        val numClasses = 29
+        val numClasses = 1
 
         for (i in 0 until numDetections) {
             val detection = transposedOutput[i]
-
-            // PERBAIKAN #2: De-normalisasi koordinat output
-            // Kalikan dengan ukuran input model untuk mendapatkan koordinat piksel
             val x = detection[0] * modelInputWidth
             val y = detection[1] * modelInputHeight
             val w = detection[2] * modelInputWidth
@@ -115,21 +110,16 @@ class FoodDetector(
             if (maxScore > scoreThreshold && bestClassIndex != -1) {
                 val label = labels[bestClassIndex]
 
-                val scaleFactor = min(modelInputWidth.toFloat() / originalWidth, modelInputHeight.toFloat() / originalHeight)
-                val padX = (modelInputWidth - originalWidth * scaleFactor) / 2
-                val padY = (modelInputHeight - originalHeight * scaleFactor) / 2
+                // --- PERBAIKAN KUNCI DI SINI ---
+                // Hapus semua logika penskalaan yang rumit.
+                // Kembalikan koordinat relatif terhadap input model (320x320).
+                // OverlayCanvas akan menangani sisanya.
+                val left = x - w / 2
+                val top = y - h / 2
+                val right = x + w / 2
+                val bottom = y + h / 2
 
-                val left = (x - w / 2)
-                val top = (y - h / 2)
-                val right = (x + w / 2)
-                val bottom = (y + h / 2)
-
-                val scaledLeft = (left - padX) / scaleFactor
-                val scaledTop = (top - padY) / scaleFactor
-                val scaledRight = (right - padX) / scaleFactor
-                val scaledBottom = (bottom - padY) / scaleFactor
-
-                val boundingBox = RectF(scaledLeft, scaledTop, scaledRight, scaledBottom)
+                val boundingBox = RectF(left, top, right, bottom)
                 detections.add(DetectionResult(boundingBox, label, maxScore))
             }
         }
@@ -170,11 +160,6 @@ class FoodDetector(
     }
 
     private val labels = listOf(
-        "Apple", "Ayam Goreng", "Bakso", "Banana", "Burger", "Capcay",
-        "Chocolate Chip Cookie", "Donat", "Ikan Goreng", "Kentang Goreng", "Kiwi",
-        "Mie Goreng", "Nasi Goreng", "Nasi Putih", "Nugget", "Pempek",
-        "Pineapples", "Pizza", "Rendang Sapi", "Sate", "Spaghetti", "Steak",
-        "Strawberry", "Tahu Goreng", "Telur Goreng", "Telur Rebus",
-        "Tempe Goreng", "Terong Balado", "Tumis Kangkung"
+        "Nasi Putih"
     )
 }

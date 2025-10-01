@@ -87,6 +87,7 @@ import com.example.nutrisiku.ui.navigation.Screen
 import com.example.nutrisiku.ui.viewmodel.DetectionViewModel
 import java.io.File
 import java.util.concurrent.Executors
+import kotlin.math.max
 import kotlin.math.min
 
 @Composable
@@ -279,6 +280,9 @@ fun ActivityLevelDropdown(
     }
 }
 
+// --- FUNGSI BARU DITAMBAHKAN DI SINI ---
+// Komponen ini bertanggung jawab untuk menampilkan gambar
+// dan menggambar bounding box di atasnya dengan penskalaan yang benar.
 @Composable
 fun ImageWithBoundingBoxes(
     bitmap: Bitmap,
@@ -289,27 +293,54 @@ fun ImageWithBoundingBoxes(
         Image(
             bitmap = bitmap.asImageBitmap(),
             contentDescription = "Hasil Deteksi",
+            // PERBAIKAN KUNCI: Samakan ContentScale dengan pratinjau kamera
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
 
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val scaleX = size.width / bitmap.width
-            val scaleY = size.height / bitmap.height
+            val originalWidth = bitmap.width.toFloat()
+            val originalHeight = bitmap.height.toFloat()
+
+            // Logika penskalaan yang sama dengan OverlayCanvas, tetapi untuk ContentScale.Crop
+            val canvasWidth = size.width
+            val canvasHeight = size.height
+
+            // Hitung skala agar gambar memenuhi canvas (Crop)
+            val scale = max(canvasWidth / originalWidth, canvasHeight / originalHeight)
+
+            val offsetX = (canvasWidth - originalWidth * scale) / 2
+            val offsetY = (canvasHeight - originalHeight * scale) / 2
 
             detectionResults.forEach { result ->
                 val rect = result.boundingBox
+
+                // Model memberikan koordinat relatif terhadap 320x320
+                val modelInputWidth = 320f
+                val modelInputHeight = 320f
+
+                // Ubah koordinat model ke koordinat gambar asli
+                val displayLeft = rect.left / modelInputWidth * originalWidth
+                val displayTop = rect.top / modelInputHeight * originalHeight
+                val displayRight = rect.right / modelInputWidth * originalWidth
+                val displayBottom = rect.bottom / modelInputHeight * originalHeight
+
+                // Terapkan skala dan offset canvas
+                val scaledLeft = displayLeft * scale + offsetX
+                val scaledTop = displayTop * scale + offsetY
+                val scaledRight = displayRight * scale + offsetX
+                val scaledBottom = displayBottom * scale + offsetY
+
                 drawRect(
                     color = Color.Red,
-                    topLeft = Offset(rect.left * scaleX, rect.top * scaleY),
-                    size = Size((rect.right - rect.left) * scaleX, (rect.bottom - rect.top) * scaleY),
+                    topLeft = Offset(scaledLeft, scaledTop),
+                    size = Size(scaledRight - scaledLeft, scaledBottom - scaledTop),
                     style = Stroke(width = 2.dp.toPx())
                 )
             }
         }
     }
 }
-
 
 @Composable
 fun CalorieCard(
@@ -570,3 +601,4 @@ fun PermissionDeniedView(onRequestPermission: () -> Unit) {
         }
     }
 }
+
