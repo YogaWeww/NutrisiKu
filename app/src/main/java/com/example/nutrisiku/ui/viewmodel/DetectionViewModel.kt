@@ -65,6 +65,8 @@ class DetectionViewModel(
 
     private var lastAnalyzedTimestamp = 0L
     private var currentFrameBitmap: Bitmap? = null // Untuk menyimpan frame gambar saat ini
+    private val _capturedBitmap = MutableStateFlow<Bitmap?>(null)
+    val capturedBitmap = _capturedBitmap.asStateFlow()
 
     fun analyzeFrame(imageProxy: ImageProxy) {
         val currentTimestamp = System.currentTimeMillis()

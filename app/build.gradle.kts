@@ -99,6 +99,7 @@ dependencies {
 
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose) // <-- TAMBAHKAN BARIS INI
     ksp(libs.androidx.room.compiler) // Gunakan ksp bukan annotationProcessor
 
     // --- CAMERA X ---

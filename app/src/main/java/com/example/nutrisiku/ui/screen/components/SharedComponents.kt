@@ -22,16 +22,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-//noinspection UsingMaterialAndMaterial3Libraries
-import androidx.compose.material.ButtonDefaults
-//noinspection UsingMaterialAndMaterial3Libraries
-import androidx.compose.material.Divider
-//noinspection UsingMaterialAndMaterial3Libraries
-import androidx.compose.material.Icon
-//noinspection UsingMaterialAndMaterial3Libraries
-import androidx.compose.material.OutlinedButton
-//noinspection UsingMaterialAndMaterial3Libraries
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DirectionsRun
 import androidx.compose.material.icons.filled.CameraAlt
@@ -42,18 +32,22 @@ import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Wc
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -192,7 +186,6 @@ fun HistoryEntryCard(
     }
 }
 
-// PERBAIKAN: GenderDropdown dipindahkan ke sini dan diberi parameter
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GenderDropdown(
@@ -210,9 +203,9 @@ fun GenderDropdown(
             value = selectedGender,
             onValueChange = {},
             readOnly = true,
-            label = { androidx.compose.material3.Text("Jenis Kelamin") },
+            label = { Text("Jenis Kelamin") },
             leadingIcon = {
-                androidx.compose.material3.Icon(
+                Icon(
                     Icons.Default.Wc,
                     contentDescription = null
                 )
@@ -228,7 +221,7 @@ fun GenderDropdown(
         ) {
             genderOptions.forEach { gender ->
                 DropdownMenuItem(
-                    text = { androidx.compose.material3.Text(gender) },
+                    text = { Text(gender) },
                     onClick = {
                         onGenderSelected(gender)
                         isExpanded = false
@@ -280,9 +273,6 @@ fun ActivityLevelDropdown(
     }
 }
 
-// --- FUNGSI BARU DITAMBAHKAN DI SINI ---
-// Komponen ini bertanggung jawab untuk menampilkan gambar
-// dan menggambar bounding box di atasnya dengan penskalaan yang benar.
 @Composable
 fun ImageWithBoundingBoxes(
     bitmap: Bitmap,
@@ -293,7 +283,6 @@ fun ImageWithBoundingBoxes(
         Image(
             bitmap = bitmap.asImageBitmap(),
             contentDescription = "Hasil Deteksi",
-            // PERBAIKAN KUNCI: Samakan ContentScale dengan pratinjau kamera
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
@@ -301,36 +290,23 @@ fun ImageWithBoundingBoxes(
         Canvas(modifier = Modifier.fillMaxSize()) {
             val originalWidth = bitmap.width.toFloat()
             val originalHeight = bitmap.height.toFloat()
-
-            // Logika penskalaan yang sama dengan OverlayCanvas, tetapi untuk ContentScale.Crop
             val canvasWidth = size.width
             val canvasHeight = size.height
-
-            // Hitung skala agar gambar memenuhi canvas (Crop)
             val scale = max(canvasWidth / originalWidth, canvasHeight / originalHeight)
-
             val offsetX = (canvasWidth - originalWidth * scale) / 2
             val offsetY = (canvasHeight - originalHeight * scale) / 2
-
             detectionResults.forEach { result ->
                 val rect = result.boundingBox
-
-                // Model memberikan koordinat relatif terhadap 320x320
                 val modelInputWidth = 320f
                 val modelInputHeight = 320f
-
-                // Ubah koordinat model ke koordinat gambar asli
                 val displayLeft = rect.left / modelInputWidth * originalWidth
                 val displayTop = rect.top / modelInputHeight * originalHeight
                 val displayRight = rect.right / modelInputWidth * originalWidth
                 val displayBottom = rect.bottom / modelInputHeight * originalHeight
-
-                // Terapkan skala dan offset canvas
                 val scaledLeft = displayLeft * scale + offsetX
                 val scaledTop = displayTop * scale + offsetY
                 val scaledRight = displayRight * scale + offsetX
                 val scaledBottom = displayBottom * scale + offsetY
-
                 drawRect(
                     color = Color.Red,
                     topLeft = Offset(scaledLeft, scaledTop),
@@ -507,27 +483,32 @@ fun OverlayCanvas(
     }
 }
 
+// --- PERBAIKAN UTAMA DI FUNGSI INI ---
 @Composable
 fun DetectionResultCard(
     modifier: Modifier = Modifier,
     viewModel: DetectionViewModel,
     onManualClick: () -> Unit,
-    onGalleryClick: () -> Unit // Parameter baru
+    onGalleryClick: () -> Unit
 ) {
     val uiState by viewModel.realtimeUiState.collectAsState()
 
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 "Hasil Deteksi",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
-            Divider(modifier = Modifier.padding(vertical = 8.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
             if (uiState.detectedItems.isEmpty()) {
                 Text(
@@ -536,7 +517,7 @@ fun DetectionResultCard(
                         .fillMaxWidth()
                         .padding(vertical = 16.dp),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             } else {
                 uiState.detectedItems.forEach { item ->
@@ -544,39 +525,60 @@ fun DetectionResultCard(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("${item.name} (${item.standardPortion}g)")
-                        Text("${item.calories} KKAL")
+                        Text(
+                            text = "${item.name} (${item.standardPortion}g)",
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "${item.calories} KKAL",
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                 }
             }
 
-            Divider(modifier = Modifier.padding(vertical = 8.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Total Estimasi Kalori", fontWeight = FontWeight.Bold)
-                Text("${uiState.totalCalories} KKAL", fontWeight = FontWeight.Bold)
+                Text(
+                    "Total Estimasi Kalori",
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    "${uiState.totalCalories} KKAL",
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             }
             Spacer(modifier = Modifier.height(16.dp))
 
-            // PERBAIKAN: Tambahkan Row untuk dua tombol
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                OutlinedButton(
-                    onClick = onGalleryClick, // Hubungkan aksi klik
-                    modifier = Modifier.weight(1f)
+                Button(
+                    onClick = onGalleryClick,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
                 ) {
                     Icon(Icons.Default.PhotoLibrary, contentDescription = "Galeri", modifier = Modifier.size(ButtonDefaults.IconSize))
                     Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
                     Text("Galeri")
                 }
-                OutlinedButton(
+                Button(
                     onClick = onManualClick,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
                 ) {
                     Icon(Icons.Default.Edit, contentDescription = "Input Manual", modifier = Modifier.size(ButtonDefaults.IconSize))
                     Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
@@ -601,4 +603,3 @@ fun PermissionDeniedView(onRequestPermission: () -> Unit) {
         }
     }
 }
-

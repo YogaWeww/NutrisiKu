@@ -76,9 +76,11 @@ class FoodDetector(
 
     private fun postProcess(outputBuffer: TensorBuffer, originalWidth: Int, originalHeight: Int): List<DetectionResult> {
         val outputArray = outputBuffer.floatArray
+        // Model YOLOv8 memiliki output shape [1, 84, 8400] atau [1, 35, 8400] tergantung jumlah kelas
+        // Di sini kita asumsikan outputnya [1, <num_classes>+4, <num_detections>]
         val shape = outputBuffer.shape
-        val numDetections = shape[2]
-        val elementsPerDetection = shape[1]
+        val numDetections = shape[2] // 8400
+        val elementsPerDetection = shape[1] // 4 (box) + 31 (classes) = 35
 
         val transposedOutput = Array(numDetections) { FloatArray(elementsPerDetection) }
         for (i in 0 until elementsPerDetection) {
@@ -88,7 +90,7 @@ class FoodDetector(
         }
 
         val detections = mutableListOf<DetectionResult>()
-        val numClasses = 1
+        val numClasses = labels.size
 
         for (i in 0 until numDetections) {
             val detection = transposedOutput[i]
@@ -99,6 +101,7 @@ class FoodDetector(
 
             var maxScore = 0f
             var bestClassIndex = -1
+            // Mulai dari index ke-4 untuk skor kelas
             for (j in 0 until numClasses) {
                 val score = detection[4 + j]
                 if (score > maxScore) {
@@ -110,10 +113,6 @@ class FoodDetector(
             if (maxScore > scoreThreshold && bestClassIndex != -1) {
                 val label = labels[bestClassIndex]
 
-                // --- PERBAIKAN KUNCI DI SINI ---
-                // Hapus semua logika penskalaan yang rumit.
-                // Kembalikan koordinat relatif terhadap input model (320x320).
-                // OverlayCanvas akan menangani sisanya.
                 val left = x - w / 2
                 val top = y - h / 2
                 val right = x + w / 2
@@ -159,7 +158,38 @@ class FoodDetector(
         return if (unionArea > 0) intersectionArea / unionArea else 0f
     }
 
+    // --- PERUBAHAN UTAMA: Perbarui daftar label ini ---
+    // Pastikan urutannya sama persis dengan urutan kelas saat training.
     private val labels = listOf(
-        "Nasi Putih"
+        "Apel",
+        "Ayam Krispi",
+        "Bakwan Jagung",
+        "Bihun goreng",
+        "Bubur",
+        "Cah Kangkung",
+        "Durian",
+        "Gado-gado",
+        "Jeruk",
+        "Kentang Goreng",
+        "Kue Borwnies",
+        "Mie Ayam",
+        "Mie Bakso",
+        "Nasi Goreng",
+        "Nasi Putih",
+        "Nugget Ayam",
+        "Pepes Ikan",
+        "Pisang",
+        "Pisang Pasir",
+        "Rendang",
+        "Roti Putih",
+        "Sate ayam",
+        "Semangka",
+        "Soto Ayam",
+        "Tahu Goreng",
+        "Telur Balado",
+        "Telur Ceplok",
+        "Telur Dadar",
+        "Telur Rebus",
+        "Tempe Goreng"
     )
 }
