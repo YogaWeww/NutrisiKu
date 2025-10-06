@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
@@ -18,22 +19,26 @@ import java.io.FileOutputStream
 import java.io.IOException
 
 // Ekstensi untuk membuat instance DataStore tunggal untuk seluruh aplikasi
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_profile")
+// Ganti nama DataStore agar lebih spesifik
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "nutrisiku_prefs")
 
 class UserRepository(private val context: Context) {
 
-    // Definisikan key untuk setiap data yang akan disimpan
     private companion object {
+        // Kunci untuk data profil pengguna
         val NAME_KEY = stringPreferencesKey("user_name")
         val AGE_KEY = intPreferencesKey("user_age")
         val WEIGHT_KEY = doublePreferencesKey("user_weight")
         val HEIGHT_KEY = doublePreferencesKey("user_height")
         val GENDER_KEY = stringPreferencesKey("user_gender")
         val ACTIVITY_LEVEL_KEY = stringPreferencesKey("user_activity_level")
-        val IMAGE_PATH_KEY = stringPreferencesKey("user_image_path") // PERUBAHAN: Tambahkan key baru
+        val IMAGE_PATH_KEY = stringPreferencesKey("user_image_path")
+
+        // PERUBAHAN: Tambahkan key baru untuk status onboarding
+        val ONBOARDING_COMPLETED_KEY = booleanPreferencesKey("onboarding_completed")
     }
 
-    // Flow untuk mendapatkan data pengguna secara real-time
+    // Flow untuk mendapatkan data pengguna secara real-time (kode Anda dipertahankan)
     val userDataFlow: Flow<UserData> = context.dataStore.data
         .map { preferences ->
             UserData(
@@ -43,11 +48,16 @@ class UserRepository(private val context: Context) {
                 height = preferences[HEIGHT_KEY] ?: 0.0,
                 gender = preferences[GENDER_KEY] ?: "Pria",
                 activityLevel = preferences[ACTIVITY_LEVEL_KEY] ?: "Aktivitas Ringan",
-                imagePath = preferences[IMAGE_PATH_KEY] ?: "" // PERUBAHAN: Baca path gambar
+                imagePath = preferences[IMAGE_PATH_KEY] ?: ""
             )
         }
 
-    // Fungsi untuk menyimpan data pengguna
+    // PERUBAHAN: Flow baru untuk membaca status onboarding
+    val onboardingCompleted: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[ONBOARDING_COMPLETED_KEY] ?: false
+    }
+
+    // Fungsi untuk menyimpan data pengguna (kode Anda dipertahankan)
     suspend fun saveUserData(userData: UserData) {
         context.dataStore.edit { preferences ->
             preferences[NAME_KEY] = userData.name
@@ -56,14 +66,21 @@ class UserRepository(private val context: Context) {
             preferences[HEIGHT_KEY] = userData.height
             preferences[GENDER_KEY] = userData.gender
             preferences[ACTIVITY_LEVEL_KEY] = userData.activityLevel
-            preferences[IMAGE_PATH_KEY] = userData.imagePath // PERUBAHAN: Simpan path gambar
+            preferences[IMAGE_PATH_KEY] = userData.imagePath
         }
     }
 
-    // PERUBAHAN: Fungsi baru untuk menyimpan file gambar
+    // PERUBAHAN: Fungsi baru untuk menandai onboarding telah selesai
+    suspend fun setOnboardingCompleted() {
+        context.dataStore.edit { preferences ->
+            preferences[ONBOARDING_COMPLETED_KEY] = true
+        }
+    }
+
+    // Fungsi untuk menyimpan file gambar (kode Anda dipertahankan)
     suspend fun saveProfilePicture(bitmap: Bitmap): String? {
         return withContext(Dispatchers.IO) {
-            val filename = "profile_picture.jpg" // Gunakan nama file yang tetap agar mudah ditimpa
+            val filename = "profile_picture.jpg"
             val file = File(context.filesDir, filename)
             try {
                 FileOutputStream(file).use { out ->

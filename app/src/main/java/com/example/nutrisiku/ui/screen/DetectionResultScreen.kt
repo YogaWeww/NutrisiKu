@@ -16,7 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.example.nutrisiku.ui.screen.components.ImageWithBoundingBoxes
+import com.example.nutrisiku.ui.screen.components.ImageResult
 import com.example.nutrisiku.ui.viewmodel.DetectionViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,7 +48,7 @@ fun DetectionResultScreen(
         ) {
             // PERBAIKAN: Gunakan komponen ImageWithBoundingBoxes yang baru
             uiState.selectedBitmap?.let { bitmap ->
-                ImageWithBoundingBoxes(
+                ImageResult(
                     bitmap = bitmap,
                     detectionResults = uiState.detectedItems.map { it.originalResult },
                     modifier = Modifier
@@ -129,8 +129,6 @@ fun DetectedItemRow(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
 
-        IconButton(onClick = { /* TODO: Opsi hapus */ }) {
-            Icon(Icons.Default.MoreVert, contentDescription = "Opsi")
-        }
+        // Tombol titik tiga telah dihapus dari sini
     }
 }

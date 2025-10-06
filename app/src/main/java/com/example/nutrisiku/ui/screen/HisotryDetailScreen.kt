@@ -12,6 +12,9 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,6 +26,7 @@ import com.example.nutrisiku.ui.navigation.Screen
 import com.example.nutrisiku.ui.screen.components.NutrisiKuBottomNavBar
 import com.example.nutrisiku.ui.viewmodel.HistoryDetailViewModel
 import java.io.File
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,6 +40,30 @@ fun HistoryDetailScreen(
     navigateToHistory: () -> Unit
 ) {
     val historyDetail by viewModel.historyDetail.collectAsState()
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Konfirmasi Hapus") },
+            text = { Text("Apakah Anda yakin ingin menghapus riwayat ini? Tindakan ini tidak dapat dibatalkan.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDeleteClick()
+                        showDeleteDialog = false
+                    }
+                ) {
+                    Text("Hapus")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Batal")
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -58,14 +86,21 @@ fun HistoryDetailScreen(
         },
         floatingActionButton = {
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                FloatingActionButton(onClick = onDeleteClick) {
-                    Icon(Icons.Default.Delete, contentDescription = "Hapus")
-                }
+                // PERUBAHAN: Urutan tombol dibalik
                 ExtendedFloatingActionButton(
                     text = { Text("Edit") },
                     icon = { Icon(Icons.Default.Edit, contentDescription = "Edit") },
-                    onClick = { historyDetail?.id?.let { onEditClick(it) } }
+                    onClick = { historyDetail?.id?.let { onEditClick(it) } },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 )
+                FloatingActionButton(
+                    onClick = { showDeleteDialog = true }, // PERUBAHAN: Tampilkan dialog
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary
+                ) {
+                    Icon(Icons.Default.Delete, contentDescription = "Hapus")
+                }
             }
         }
     ) { innerPadding ->

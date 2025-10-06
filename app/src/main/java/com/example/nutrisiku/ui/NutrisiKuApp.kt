@@ -26,21 +26,23 @@ import com.example.nutrisiku.ui.screen.SplashScreen
 import com.example.nutrisiku.ui.viewmodel.DetectionViewModel
 import com.example.nutrisiku.ui.viewmodel.HistoryDetailViewModel
 import com.example.nutrisiku.ui.viewmodel.HistoryViewModel
+import com.example.nutrisiku.ui.viewmodel.MainViewModel
 import com.example.nutrisiku.ui.viewmodel.ManualInputViewModel
 import com.example.nutrisiku.ui.viewmodel.ProfileViewModel
 import com.example.nutrisiku.ui.viewmodel.ViewModelFactory
 
-
 @Composable
 fun NutrisiKuApp(
-    startDestination: String // Terima start destination sebagai parameter
+    startDestination: String // Terima start destination dari MainActivity
 ) {
     val navController = rememberNavController()
     val application = LocalContext.current.applicationContext as Application
 
-    // PERBAIKAN: Factory sekarang hanya butuh application context, lebih sederhana.
+    // Factory Anda dipertahankan, ini sudah bagus
     val factory = ViewModelFactory(application)
 
+    // PERUBAHAN: Inisialisasi MainViewModel di sini agar bisa diakses oleh Onboarding
+    val mainViewModel: MainViewModel = viewModel(factory = factory)
     val profileViewModel: ProfileViewModel = viewModel(factory = factory)
     val historyViewModel: HistoryViewModel = viewModel(factory = factory)
     val detectionViewModel: DetectionViewModel = viewModel(factory = factory)
@@ -48,21 +50,17 @@ fun NutrisiKuApp(
 
     NavHost(
         navController = navController,
-        startDestination = startDestination, // Gunakan start destination dari MainActivity
+        startDestination = startDestination, // Gunakan start destination yang sudah benar
     ) {
-        composable(Screen.Splash.route) {
-            SplashScreen(
-                onTimeout = {
-                    navController.navigate(Screen.Onboarding.route) {
-                        popUpTo(Screen.Splash.route) { inclusive = true }
-                    }
-                }
-            )
-        }
+        // Rute Splash tidak lagi dibutuhkan di sini karena sudah ditangani MainActivity
+        // composable(Screen.Splash.route) { ... }
 
         composable(Screen.Onboarding.route) {
             OnboardingScreen(
                 onFinishClick = {
+                    // PERUBAHAN KUNCI: Tandai bahwa onboarding telah selesai!
+                    mainViewModel.setOnboardingCompleted()
+                    // Navigasi tetap sama seperti kode Anda
                     navController.navigate(Screen.ProfileInput.route) {
                         popUpTo(Screen.Onboarding.route) { inclusive = true }
                     }
@@ -70,6 +68,7 @@ fun NutrisiKuApp(
             )
         }
 
+        // Sisa dari kode NavHost Anda tetap sama persis
         composable(Screen.ProfileInput.route) {
             ProfileInputScreen(
                 viewModel = profileViewModel,

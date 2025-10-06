@@ -81,7 +81,6 @@ import com.example.nutrisiku.ui.navigation.Screen
 import com.example.nutrisiku.ui.viewmodel.DetectionViewModel
 import java.io.File
 import java.util.concurrent.Executors
-import kotlin.math.max
 import kotlin.math.min
 
 @Composable
@@ -274,9 +273,9 @@ fun ActivityLevelDropdown(
 }
 
 @Composable
-fun ImageWithBoundingBoxes(
+fun ImageResult(
     bitmap: Bitmap,
-    detectionResults: List<DetectionResult>,
+    detectionResults: List<DetectionResult>, // Parameter ini sengaja tidak dihapus agar tidak error
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier) {
@@ -286,35 +285,7 @@ fun ImageWithBoundingBoxes(
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
-
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val originalWidth = bitmap.width.toFloat()
-            val originalHeight = bitmap.height.toFloat()
-            val canvasWidth = size.width
-            val canvasHeight = size.height
-            val scale = max(canvasWidth / originalWidth, canvasHeight / originalHeight)
-            val offsetX = (canvasWidth - originalWidth * scale) / 2
-            val offsetY = (canvasHeight - originalHeight * scale) / 2
-            detectionResults.forEach { result ->
-                val rect = result.boundingBox
-                val modelInputWidth = 320f
-                val modelInputHeight = 320f
-                val displayLeft = rect.left / modelInputWidth * originalWidth
-                val displayTop = rect.top / modelInputHeight * originalHeight
-                val displayRight = rect.right / modelInputWidth * originalWidth
-                val displayBottom = rect.bottom / modelInputHeight * originalHeight
-                val scaledLeft = displayLeft * scale + offsetX
-                val scaledTop = displayTop * scale + offsetY
-                val scaledRight = displayRight * scale + offsetX
-                val scaledBottom = displayBottom * scale + offsetY
-                drawRect(
-                    color = Color.Red,
-                    topLeft = Offset(scaledLeft, scaledTop),
-                    size = Size(scaledRight - scaledLeft, scaledBottom - scaledTop),
-                    style = Stroke(width = 2.dp.toPx())
-                )
-            }
-        }
+        // KODE CANVAS UNTUK MENGGAMBAR BOUNDING BOX DIHAPUS DARI SINI
     }
 }
 
@@ -325,7 +296,8 @@ fun CalorieCard(
     modifier: Modifier = Modifier
 ) {
     val remaining = total - consumed
-    val progress = if (total > 0) consumed.toFloat() / total.toFloat() else 0f
+    // Pastikan progress tidak lebih dari 1.0f
+    val progress = if (total > 0) (consumed.toFloat() / total.toFloat()).coerceIn(0f, 1f) else 0f
 
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -372,8 +344,16 @@ fun CalorieCard(
                 color = MaterialTheme.colorScheme.secondary,
                 trackColor = Color.White
             )
+
+            // PERUBAHAN LOGIKA TEKS DI SINI
+            val remainingText = if (remaining <= 0) {
+                "Kebutuhan kalori harian terpenuhi"
+            } else {
+                "$remaining KKAL TERSISA"
+            }
+
             Text(
-                text = "$remaining KKAL TERSISA",
+                text = remainingText,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier
                     .align(Alignment.End)

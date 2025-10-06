@@ -15,31 +15,34 @@ import com.example.nutrisiku.ui.theme.NutrisiKuTheme
 import com.example.nutrisiku.ui.viewmodel.MainViewModel
 
 class MainActivity : ComponentActivity() {
-
-    private val viewModel: MainViewModel by viewModels()
+    // Inisialisasi MainViewModel di sini
+    private val mainViewModel: MainViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        // Tetap gunakan installSplashScreen untuk menangani cold start
         installSplashScreen().setKeepOnScreenCondition {
-            viewModel.isLoading.value
+            mainViewModel.isLoading.value
         }
 
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-
         setContent {
-            // Panggil tema kustom Anda
             NutrisiKuTheme {
-                // --- PERBAIKAN KUNCI ADA DI SINI ---
-                // Bungkus seluruh aplikasi di dalam Surface.
-                // Ini memaksa Compose untuk menggunakan warna dari colorScheme Anda
-                // sebagai dasar untuk semua komponen di dalamnya.
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background // Gunakan warna latar belakang dari tema Anda
+                    color = MaterialTheme.colorScheme.background
                 ) {
-                    val startDestination by viewModel.startDestination.collectAsState()
-                    NutrisiKuApp(startDestination = startDestination)
+                    // Ambil start destination dari ViewModel
+                    val startDestination by mainViewModel.startDestination.collectAsState()
+                    val isLoading by mainViewModel.isLoading.collectAsState()
+
+                    if (!isLoading && startDestination != null) {
+                        // Kirim startDestination yang benar ke NutrisiKuApp
+                        NutrisiKuApp(startDestination = startDestination!!)
+                    } else {
+                        // Selama loading, bisa tampilkan splash screen lagi jika perlu
+                        // Namun, setKeepOnScreenCondition sudah menanganinya.
+                        // Blok ini bisa dikosongkan atau diisi UI loading lain.
+                    }
                 }
             }
         }

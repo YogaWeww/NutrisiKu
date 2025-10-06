@@ -86,6 +86,20 @@ class HistoryDetailViewModel(
         }
     }
 
+    // PERUBAHAN: Fungsi baru untuk menghapus item dari daftar
+    fun onDeleteItem(itemIndex: Int) {
+        _historyDetail.update { currentDetail ->
+            currentDetail?.let {
+                val updatedItems = it.foodItems.toMutableList()
+                if (itemIndex in updatedItems.indices) {
+                    updatedItems.removeAt(itemIndex)
+                }
+                val newTotalCalories = updatedItems.sumOf { item -> item.calories }
+                it.copy(foodItems = updatedItems, totalCalories = newTotalCalories)
+            }
+        }
+    }
+
     fun updateHistory() {
         viewModelScope.launch {
             _historyDetail.value?.let {
@@ -102,4 +116,3 @@ class HistoryDetailViewModel(
         }
     }
 }
-

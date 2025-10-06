@@ -12,6 +12,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -19,6 +20,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -54,7 +56,12 @@ fun EditHistoryScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onSaveClick) {
+            FloatingActionButton(
+                onClick = onSaveClick,
+                // PERBAIKAN: Terapkan warna tema
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
                 Icon(Icons.Default.Check, contentDescription = "Simpan")
             }
         }
@@ -78,6 +85,10 @@ fun EditHistoryScreen(
                         },
                         onPortionChange = { newPortion ->
                             viewModel.onPortionChange(index, newPortion)
+                        },
+                        // PERUBAHAN: Tambahkan aksi untuk menghapus item
+                        onDeleteItem = {
+                            viewModel.onDeleteItem(index)
                         }
                     )
                     HorizontalDivider(
@@ -94,15 +105,15 @@ fun EditHistoryScreen(
 @Composable
 fun EditableHistoryItem(
     item: HistoryFoodItem,
-    onNameChange: (String) -> Unit, // Tambahkan ini
-    onPortionChange: (String) -> Unit
+    onNameChange: (String) -> Unit,
+    onPortionChange: (String) -> Unit,
+    onDeleteItem: () -> Unit // PERUBAHAN: Tambahkan parameter callback
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // PERUBAHAN: Ganti Text dengan OutlinedTextField
         OutlinedTextField(
             value = item.name,
             onValueChange = onNameChange,
@@ -116,5 +127,9 @@ fun EditableHistoryItem(
             modifier = Modifier.width(100.dp),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
+        // PERUBAHAN: Tambahkan IconButton untuk hapus
+        IconButton(onClick = onDeleteItem) {
+            Icon(Icons.Default.Delete, contentDescription = "Hapus Item", tint = MaterialTheme.colorScheme.secondary)
+        }
     }
 }
