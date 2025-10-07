@@ -25,20 +25,20 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.util.Calendar
 
-// Data class untuk menampung satu item makanan yang sudah dihitung kalorinya
 data class DetectedFoodItem(
     val name: String,
-    val standardPortion: Int, // dalam gram
+    val standardPortion: Int,
     val calories: Int,
-    val originalResult: DetectionResult // Menyimpan hasil asli dari TFLite
+    val originalResult: DetectionResult,
+    val isLocked: Boolean = false
 )
 
-// State class untuk UI hasil deteksi
 data class DetectionUiState(
     val selectedBitmap: Bitmap? = null,
     val detectedItems: List<DetectedFoodItem> = emptyList(),
     val totalCalories: Int = 0,
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    val isConfirmEnabled: Boolean = false
 )
 
 class DetectionViewModel(
@@ -47,85 +47,113 @@ class DetectionViewModel(
     private val historyRepository: HistoryRepository
 ) : AndroidViewModel(application) {
 
-    // State utama untuk layar hasil akhir (DetectionResultScreen)
     private val _uiState = MutableStateFlow(DetectionUiState())
     val uiState = _uiState.asStateFlow()
 
     private val foodDetector = FoodDetector(application)
     private val nutritionData: Map<String, FoodNutrition> = nutritionRepository.getNutritionData()
 
-    // State untuk hasil mentah dari model (untuk overlay box)
     private val _realtimeResults = MutableStateFlow<List<DetectionResult>>(emptyList())
     val realtimeResults = _realtimeResults.asStateFlow()
 
-    // --- PERUBAHAN ---
-    // State baru untuk menampung hasil yang sudah diproses untuk UI real-time (kartu di bawah)
     private val _realtimeUiState = MutableStateFlow(DetectionUiState())
     val realtimeUiState = _realtimeUiState.asStateFlow()
 
     private var lastAnalyzedTimestamp = 0L
-    private var currentFrameBitmap: Bitmap? = null // Untuk menyimpan frame gambar saat ini
-    private val _capturedBitmap = MutableStateFlow<Bitmap?>(null)
-    val capturedBitmap = _capturedBitmap.asStateFlow()
+    private var currentFrameBitmap: Bitmap? = null
+
+    fun clearDetectionState() {
+        _realtimeUiState.value = DetectionUiState()
+        _realtimeResults.value = emptyList()
+        currentFrameBitmap = null
+    }
 
     fun analyzeFrame(imageProxy: ImageProxy) {
         val currentTimestamp = System.currentTimeMillis()
-        if (currentTimestamp - lastAnalyzedTimestamp >= 1000) {
+        if (currentTimestamp - lastAnalyzedTimestamp >= 500) {
             val rotationDegrees = imageProxy.imageInfo.rotationDegrees
             val bitmap = imageProxy.toBitmap().rotate(rotationDegrees.toFloat())
-            currentFrameBitmap = bitmap // Simpan frame gambar saat ini
+            currentFrameBitmap = bitmap
 
             viewModelScope.launch(Dispatchers.Default) {
                 val results = foodDetector.detect(bitmap)
-                _realtimeResults.value = results // Update hasil mentah untuk overlay
-                processRealtimeDetections(results) // Proses hasil untuk ditampilkan di kartu UI
+                _realtimeResults.value = results
+                processRealtimeDetections(results)
             }
             lastAnalyzedTimestamp = currentTimestamp
         }
         imageProxy.close()
     }
 
-    // Fungsi baru untuk memproses hasil deteksi real-time
+    // --- PERBAIKAN UTAMA DI SINI ---
     private fun processRealtimeDetections(results: List<DetectionResult>) {
-        val foodItems = mutableListOf<DetectedFoodItem>()
-        var totalCalories = 0
-        results.forEach { result ->
+        // 1. Ambil item yang sudah dikunci dari state saat ini
+        val lockedItems = _realtimeUiState.value.detectedItems.filter { it.isLocked }
+        val lockedItemNames = lockedItems.map { it.name }
+
+        // 2. Ubah hasil deteksi mentah dari model menjadi list item yang bisa ditampilkan
+        val newDetectedItems = results.mapNotNull { result ->
             val foodInfo = nutritionData[result.label]
             if (foodInfo != null) {
                 val calories = (foodInfo.kalori_per_100g / 100.0 * foodInfo.porsi_standar_g).toInt()
-                foodItems.add(
-                    DetectedFoodItem(
-                        name = foodInfo.nama_tampilan,
-                        standardPortion = foodInfo.porsi_standar_g,
-                        calories = calories,
-                        originalResult = result
-                    )
+                DetectedFoodItem(
+                    name = foodInfo.nama_tampilan,
+                    standardPortion = foodInfo.porsi_standar_g,
+                    calories = calories,
+                    originalResult = result,
+                    isLocked = false
                 )
-                totalCalories += calories
+            } else {
+                null
             }
         }
-        // Update state UI real-time
+
+        // 3. Filter item baru, buang yang namanya sama dengan item yang sudah dikunci
+        val uniqueNewItems = newDetectedItems.filter { it.name !in lockedItemNames }
+
+        // 4. Gabungkan: item yang sudah dikunci + item baru yang unik
+        val finalDisplayList = lockedItems + uniqueNewItems
+
+        // 5. Update UI state dengan daftar final
         _realtimeUiState.update {
-            it.copy(detectedItems = foodItems, totalCalories = totalCalories)
+            it.copy(detectedItems = finalDisplayList)
         }
     }
 
-    // --- FUNGSI BARU YANG SEBELUMNYA HILANG ---
-    // Fungsi yang dipanggil saat tombol centang (konfirmasi) ditekan
+
+    fun toggleLockState(itemToToggle: DetectedFoodItem) {
+        _realtimeUiState.update { currentState ->
+            val updatedItems = currentState.detectedItems.map {
+                if (it.name == itemToToggle.name) {
+                    it.copy(isLocked = !it.isLocked)
+                } else {
+                    it
+                }
+            }
+            val lockedItems = updatedItems.filter { it.isLocked }
+            val newTotalCalories = lockedItems.sumOf { it.calories }
+            currentState.copy(
+                detectedItems = updatedItems,
+                totalCalories = newTotalCalories,
+                isConfirmEnabled = lockedItems.isNotEmpty()
+            )
+        }
+    }
+
     fun confirmRealtimeDetection() {
-        val confirmedState = _realtimeUiState.value
-        // Pindahkan state dari real-time ke state utama untuk diteruskan ke layar hasil
+        val confirmedItems = _realtimeUiState.value.detectedItems.filter { it.isLocked }
+        val totalCalories = _realtimeUiState.value.totalCalories
+
         _uiState.update {
             it.copy(
                 selectedBitmap = currentFrameBitmap,
-                detectedItems = confirmedState.detectedItems,
-                totalCalories = confirmedState.totalCalories,
+                detectedItems = confirmedItems,
+                totalCalories = totalCalories,
                 isLoading = false
             )
         }
     }
 
-    // Fungsi untuk deteksi dari galeri/kamera (capture tunggal)
     fun onImageSelected(bitmap: Bitmap) {
         _uiState.update { it.copy(selectedBitmap = bitmap, isLoading = true) }
         viewModelScope.launch {
@@ -134,7 +162,6 @@ class DetectionViewModel(
         }
     }
 
-    // Memproses hasil deteksi untuk state utama
     private fun processDetections(results: List<DetectionResult>) {
         val foodItems = mutableListOf<DetectedFoodItem>()
         var totalCalories = 0
@@ -245,4 +272,3 @@ class DetectionViewModel(
         return Bitmap.createBitmap(this, 0, 0, width, height, matrix, true)
     }
 }
-

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -50,9 +51,9 @@ fun DetectionScreen(
 ) {
     val context = LocalContext.current
     val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
-    val realtimeResults by viewModel.realtimeResults.collectAsState()
+    // PERUBAHAN: Ambil state dari realtimeUiState
+    val realtimeUiState by viewModel.realtimeUiState.collectAsState()
 
-    // PERBAIKAN: Launcher galeri ditambahkan kembali
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri: Uri? ->
@@ -69,7 +70,6 @@ fun DetectionScreen(
         }
     )
 
-    // Minta izin saat layar pertama kali ditampilkan
     LaunchedEffect(Unit) {
         if (!cameraPermissionState.status.isGranted) {
             cameraPermissionState.launchPermissionRequest()
@@ -82,7 +82,7 @@ fun DetectionScreen(
                 title = { Text("Deteksi", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Kembali")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Kembali")
                     }
                 },
                 actions = {
@@ -91,7 +91,8 @@ fun DetectionScreen(
                             viewModel.confirmRealtimeDetection()
                             navigateToResult()
                         },
-                        enabled = realtimeResults.isNotEmpty()
+                        // PERUBAHAN: Tombol aktif berdasarkan state dari ViewModel
+                        enabled = realtimeUiState.isConfirmEnabled
                     ) {
                         Icon(Icons.Default.Check, contentDescription = "Konfirmasi Deteksi")
                     }
@@ -122,7 +123,6 @@ fun DetectionScreen(
                     .padding(16.dp),
                 viewModel = viewModel,
                 onManualClick = onManualClick,
-                // PERBAIKAN: Tambahkan aksi klik untuk tombol galeri
                 onGalleryClick = { imagePickerLauncher.launch("image/*") }
             )
         }

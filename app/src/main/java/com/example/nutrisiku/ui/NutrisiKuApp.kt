@@ -33,15 +33,12 @@ import com.example.nutrisiku.ui.viewmodel.ViewModelFactory
 
 @Composable
 fun NutrisiKuApp(
-    startDestination: String // Terima start destination dari MainActivity
+    startDestination: String
 ) {
     val navController = rememberNavController()
     val application = LocalContext.current.applicationContext as Application
-
-    // Factory Anda dipertahankan, ini sudah bagus
     val factory = ViewModelFactory(application)
 
-    // PERUBAHAN: Inisialisasi MainViewModel di sini agar bisa diakses oleh Onboarding
     val mainViewModel: MainViewModel = viewModel(factory = factory)
     val profileViewModel: ProfileViewModel = viewModel(factory = factory)
     val historyViewModel: HistoryViewModel = viewModel(factory = factory)
@@ -50,17 +47,12 @@ fun NutrisiKuApp(
 
     NavHost(
         navController = navController,
-        startDestination = startDestination, // Gunakan start destination yang sudah benar
+        startDestination = startDestination,
     ) {
-        // Rute Splash tidak lagi dibutuhkan di sini karena sudah ditangani MainActivity
-        // composable(Screen.Splash.route) { ... }
-
         composable(Screen.Onboarding.route) {
             OnboardingScreen(
                 onFinishClick = {
-                    // PERUBAHAN KUNCI: Tandai bahwa onboarding telah selesai!
                     mainViewModel.setOnboardingCompleted()
-                    // Navigasi tetap sama seperti kode Anda
                     navController.navigate(Screen.ProfileInput.route) {
                         popUpTo(Screen.Onboarding.route) { inclusive = true }
                     }
@@ -68,7 +60,6 @@ fun NutrisiKuApp(
             )
         }
 
-        // Sisa dari kode NavHost Anda tetap sama persis
         composable(Screen.ProfileInput.route) {
             ProfileInputScreen(
                 viewModel = profileViewModel,
@@ -86,7 +77,11 @@ fun NutrisiKuApp(
                 profileViewModel = profileViewModel,
                 historyViewModel = historyViewModel,
                 navigateToProfile = { navController.navigate(Screen.Profile.route) },
-                navigateToDetection = { navController.navigate(Screen.Detection.route) },
+                // PERBAIKAN: Panggil clearDetectionState saat memulai deteksi
+                navigateToDetection = {
+                    detectionViewModel.clearDetectionState()
+                    navController.navigate(Screen.Detection.route)
+                },
                 navigateToHistory = { navController.navigate(Screen.History.route) }
             )
         }
@@ -112,7 +107,11 @@ fun NutrisiKuApp(
                     navController.navigateUp()
                 },
                 navigateToHome = { navController.navigate(Screen.Home.route) },
-                navigateToDetection = { navController.navigate(Screen.Detection.route) },
+                // PERBAIKAN: Panggil clearDetectionState saat memulai deteksi
+                navigateToDetection = {
+                    detectionViewModel.clearDetectionState()
+                    navController.navigate(Screen.Detection.route)
+                },
                 navigateToHistory = { navController.navigate(Screen.History.route) }
             )
         }
@@ -125,17 +124,19 @@ fun NutrisiKuApp(
                     navController.navigate(Screen.HistoryDetail.createRoute(historyId))
                 },
                 navigateToHome = { navController.navigate(Screen.Home.route) },
-                navigateToDetection = { navController.navigate(Screen.Detection.route) }
+                // PERBAIKAN: Panggil clearDetectionState saat memulai deteksi
+                navigateToDetection = {
+                    detectionViewModel.clearDetectionState()
+                    navController.navigate(Screen.Detection.route)
+                }
             )
         }
 
         composable(
             route = Screen.HistoryDetail.route,
             arguments = listOf(navArgument("historyId") { type = NavType.IntType })
-        ) { backStackEntry ->
-            // Sekarang kita bisa menggunakan factory yang sama karena sudah di-setup dengan benar
+        ) {
             val viewModel: HistoryDetailViewModel = viewModel(factory = factory)
-
             HistoryDetailScreen(
                 viewModel = viewModel,
                 onBackClick = { navController.navigateUp() },
@@ -147,7 +148,11 @@ fun NutrisiKuApp(
                     navController.navigate(Screen.EditHistory.createRoute(historyId))
                 },
                 navigateToHome = { navController.navigate(Screen.Home.route) },
-                navigateToDetection = { navController.navigate(Screen.Detection.route) },
+                // PERBAIKAN: Panggil clearDetectionState saat memulai deteksi
+                navigateToDetection = {
+                    detectionViewModel.clearDetectionState()
+                    navController.navigate(Screen.Detection.route)
+                },
                 navigateToHistory = { navController.navigate(Screen.History.route) }
             )
         }
@@ -155,8 +160,7 @@ fun NutrisiKuApp(
         composable(
             route = Screen.EditHistory.route,
             arguments = listOf(navArgument("historyId") { type = NavType.IntType })
-        ) { backStackEntry ->
-            // Gunakan factory yang sama di sini juga
+        ) {
             val viewModel: HistoryDetailViewModel = viewModel(factory = factory)
             EditHistoryScreen(
                 viewModel = viewModel,
@@ -202,17 +206,6 @@ fun NutrisiKuApp(
                         popUpTo(Screen.Home.route) { inclusive = true }
                     }
                     manualInputViewModel.clearState()
-                }
-            )
-        }
-
-        composable(Screen.Camera.route) {
-            CameraScreen(
-                viewModel = detectionViewModel,
-                navigateToResult = {
-                    navController.navigate(Screen.DetectionResult.route) {
-                        popUpTo(Screen.Camera.route) { inclusive = true }
-                    }
                 }
             )
         }
