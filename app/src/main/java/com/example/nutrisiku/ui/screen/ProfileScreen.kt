@@ -23,10 +23,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForwardIos
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Height
@@ -43,6 +44,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -51,7 +53,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.nutrisiku.R
@@ -100,7 +104,7 @@ fun ProfileScreen(
                 title = { Text("Profil", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Kembali")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Kembali")
                     }
                 }
             )
@@ -182,7 +186,7 @@ fun EditProfileButton(onClick: () -> Unit) {
         )
         Spacer(modifier = Modifier.weight(1f))
         Icon(
-            imageVector = Icons.Default.ArrowForwardIos,
+            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
             contentDescription = null,
             modifier = Modifier.size(16.dp),
             tint = MaterialTheme.colorScheme.onPrimary
@@ -202,13 +206,18 @@ fun EditProfileScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    // PERBAIKAN: Memuat data awal saat layar pertama kali ditampilkan
+    LaunchedEffect(Unit) {
+        viewModel.loadInitialData()
+    }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("Edit Profil", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Kembali")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Kembali")
                     }
                 }
             )
@@ -227,12 +236,22 @@ fun EditProfileScreen(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
+            Text(
+                text = "* Semua kolom wajib diisi untuk menyimpan.",
+                style = MaterialTheme.typography.bodySmall,
+                fontStyle = FontStyle.Italic,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             OutlinedTextField(
                 value = uiState.name,
                 onValueChange = viewModel::onNameChange,
                 label = { Text("Nama / Username") },
                 leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
             )
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -241,7 +260,9 @@ fun EditProfileScreen(
                 onValueChange = viewModel::onAgeChange,
                 label = { Text("Umur (Tahun)") },
                 leadingIcon = { Icon(Icons.Default.Cake, contentDescription = null) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true
             )
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -250,7 +271,9 @@ fun EditProfileScreen(
                 onValueChange = viewModel::onWeightChange,
                 label = { Text("Berat Badan (kg)") },
                 leadingIcon = { Icon(Icons.Default.MonitorWeight, contentDescription = null) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true
             )
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -259,11 +282,12 @@ fun EditProfileScreen(
                 onValueChange = viewModel::onHeightChange,
                 label = { Text("Tinggi Badan (cm)") },
                 leadingIcon = { Icon(Icons.Default.Height, contentDescription = null) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            // PERBAIKAN: Panggil GenderDropdown dari SharedComponents
             GenderDropdown(
                 selectedGender = uiState.gender,
                 onGenderSelected = viewModel::onGenderChange
@@ -279,6 +303,7 @@ fun EditProfileScreen(
 
             Button(
                 onClick = onSaveClick,
+                enabled = uiState.isConfirmButtonEnabled,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),

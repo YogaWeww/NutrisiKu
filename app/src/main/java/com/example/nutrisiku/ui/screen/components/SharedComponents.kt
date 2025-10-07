@@ -43,10 +43,12 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -213,10 +215,13 @@ fun GenderDropdown(
             modifier = Modifier
                 .fillMaxWidth()
                 .menuAnchor()
+            // PERUBAHAN: Menghapus pewarnaan khusus agar sama dengan text field lain
         )
         ExposedDropdownMenu(
             expanded = isExpanded,
-            onDismissRequest = { isExpanded = false }
+            onDismissRequest = { isExpanded = false },
+            // PERUBAHAN: Menambahkan warna latar belakang pada menu
+            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
         ) {
             genderOptions.forEach { gender ->
                 DropdownMenuItem(
@@ -224,7 +229,11 @@ fun GenderDropdown(
                     onClick = {
                         onGenderSelected(gender)
                         isExpanded = false
-                    }
+                    },
+                    // PERUBAHAN: Menambahkan warna pada item menu
+                    colors = MenuDefaults.itemColors(
+                        textColor = MaterialTheme.colorScheme.onSurface
+                    )
                 )
             }
         }
@@ -254,10 +263,13 @@ fun ActivityLevelDropdown(
             modifier = Modifier
                 .fillMaxWidth()
                 .menuAnchor()
+            // PERUBAHAN: Menghapus pewarnaan khusus agar sama dengan text field lain
         )
         ExposedDropdownMenu(
             expanded = isExpanded,
-            onDismissRequest = { isExpanded = false }
+            onDismissRequest = { isExpanded = false },
+            // PERUBAHAN: Menambahkan warna latar belakang pada menu
+            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
         ) {
             activityOptions.forEach { activity ->
                 DropdownMenuItem(
@@ -265,12 +277,17 @@ fun ActivityLevelDropdown(
                     onClick = {
                         onActivitySelected(activity)
                         isExpanded = false
-                    }
+                    },
+                    // PERUBAHAN: Menambahkan warna pada item menu
+                    colors = MenuDefaults.itemColors(
+                        textColor = MaterialTheme.colorScheme.onSurface
+                    )
                 )
             }
         }
     }
 }
+
 
 @Composable
 fun ImageResult(

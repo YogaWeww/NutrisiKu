@@ -2,15 +2,20 @@
 
 package com.example.nutrisiku.ui.screen
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -20,7 +25,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.nutrisiku.R // Pastikan Anda memiliki gambar placeholder di res/drawable
 import com.example.nutrisiku.ui.theme.NutrisiKuTheme
-import com.google.accompanist.pager.*
 import kotlinx.coroutines.launch
 
 // Data class untuk setiap halaman onboarding
@@ -49,39 +53,34 @@ val onboardingPages = listOf(
     )
 )
 
-@OptIn(ExperimentalPagerApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun OnboardingScreen(
     onFinishClick: () -> Unit
 ) {
-    val pagerState = rememberPagerState()
+    val pagerState = rememberPagerState(pageCount = { onboardingPages.size })
     val scope = rememberCoroutineScope()
 
-    // PERUBAHAN: Menggunakan Box agar Pager bisa menjadi latar belakang
     Box(modifier = Modifier.fillMaxSize()) {
         HorizontalPager(
-            count = onboardingPages.size,
             state = pagerState,
             modifier = Modifier.fillMaxSize()
         ) { pageIndex ->
             OnboardingPageContent(page = onboardingPages[pageIndex])
         }
 
-        // Kontrol (indikator dan tombol) diletakkan di atas Pager
         Row(
             modifier = Modifier
-                .fillMaxWidth()
                 .align(Alignment.BottomCenter)
-                .padding(horizontal = 32.dp, vertical = 24.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(32.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            HorizontalPagerIndicator(
-                pagerState = pagerState,
-                activeColor = Color.White,
-                inactiveColor = Color.White.copy(alpha = 0.5f)
+            PageIndicator(
+                numberOfPages = onboardingPages.size,
+                selectedPage = pagerState.currentPage
             )
-
             Button(
                 onClick = {
                     if (pagerState.currentPage < onboardingPages.size - 1) {
@@ -91,21 +90,31 @@ fun OnboardingScreen(
                     } else {
                         onFinishClick()
                     }
-                },
-                shape = RoundedCornerShape(50),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White,
-                    contentColor = MaterialTheme.colorScheme.primary
-                )
+                }
             ) {
-                Text(
-                    text = if (pagerState.currentPage < onboardingPages.size - 1) "Next" else "Mulai",
-                    fontWeight = FontWeight.Bold
-                )
+                Text(if (pagerState.currentPage < onboardingPages.size - 1) "Next" else "Finish")
             }
         }
     }
 }
+
+@Composable
+fun PageIndicator(numberOfPages: Int, selectedPage: Int) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        for (i in 0 until numberOfPages) {
+            Box(
+                modifier = Modifier
+                    .size(if (i == selectedPage) 12.dp else 8.dp)
+                    .clip(CircleShape)
+                    .background(if (i == selectedPage) MaterialTheme.colorScheme.primary else Color.Gray)
+            )
+        }
+    }
+}
+
 
 @Composable
 fun OnboardingPageContent(page: OnboardingPage) {

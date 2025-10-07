@@ -2,11 +2,12 @@ package com.example.nutrisiku.data
 
 // Data class untuk merepresentasikan data profil pengguna
 data class UserData(
-    val name: String = "",
-    val age: Int = 0,
-    val weight: Double = 0.0,
-    val height: Double = 0.0,
-    val gender: String = "Pria",
-    val activityLevel: String = "Aktivitas Ringan",
-    val imagePath: String = "" // PERUBAHAN: Tambahkan ini
+    val name: String,
+    val age: Int,
+    val weight: Double,
+    val height: Double,
+    val gender: String,
+    val activityLevel: String,
+    val imagePath: String,
+    val tdee: Float = 0f // PERUBAHAN: Tambahkan properti TDEE
 )

@@ -1,8 +1,7 @@
 package com.example.nutrisiku.ui.viewmodel
 
-import android.app.Application
 import android.graphics.Bitmap
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.nutrisiku.data.UserData
 import com.example.nutrisiku.data.UserRepository
@@ -12,9 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 
-// State class untuk menampung semua state yang dibutuhkan oleh UI Edit Profile
 data class EditProfileUiState(
     val name: String = "",
     val age: String = "",
@@ -22,25 +19,19 @@ data class EditProfileUiState(
     val height: String = "",
     val gender: String = "Pria",
     val activityLevel: String = "Aktivitas Ringan",
-    val tdee: Int = 0,
-    val imagePath: String = "" // PERUBAHAN: Tambahkan ini
+    val imagePath: String = "",
+    val tdee: Int = 0, // Properti ini sekarang akan diisi dengan benar
+    val isConfirmButtonEnabled: Boolean = false
 )
 
-class ProfileViewModel(
-    application: Application,
-    private val userRepository: UserRepository
-) : AndroidViewModel(application) {
+class ProfileViewModel(private val userRepository: UserRepository) : ViewModel() {
 
-
-    // StateFlow untuk menampung data profil yang akan diobservasi oleh UI
     private val _uiState = MutableStateFlow(EditProfileUiState())
     val uiState: StateFlow<EditProfileUiState> = _uiState.asStateFlow()
 
     init {
         viewModelScope.launch {
             userRepository.userDataFlow.collect { userData ->
-                // Hitung TDEE setiap kali data pengguna dimuat
-                val calculatedTdee = calculateTdee(userData)
                 _uiState.update {
                     it.copy(
                         name = userData.name,
@@ -49,93 +40,129 @@ class ProfileViewModel(
                         height = if (userData.height > 0) userData.height.toString() else "",
                         gender = userData.gender,
                         activityLevel = userData.activityLevel,
-                        tdee = calculatedTdee,
-                        imagePath = userData.imagePath // PERUBAHAN: Update state dengan path gambar
+                        imagePath = userData.imagePath,
+                        tdee = userData.tdee.toInt() // Sekarang ini valid
                     )
                 }
+                validateState()
             }
         }
     }
 
-    // --- Fungsi untuk menangani perubahan input dari UI ---
-
-    fun onNameChange(newName: String) {
-        _uiState.update { it.copy(name = newName) }
-    }
-
-    fun onAgeChange(newAge: String) {
-        _uiState.update { it.copy(age = newAge) }
-    }
-
-    fun onWeightChange(newWeight: String) {
-        _uiState.update { it.copy(weight = newWeight) }
-    }
-
-    fun onHeightChange(newHeight: String) {
-        _uiState.update { it.copy(height = newHeight) }
-    }
-
-    fun onGenderChange(newGender: String) {
-        _uiState.update { it.copy(gender = newGender) }
-    }
-
-    fun onActivityLevelChange(newActivityLevel: String) {
-        _uiState.update { it.copy(activityLevel = newActivityLevel) }
-    }
-
-    // Fungsi untuk menyimpan data profil
-    fun saveProfile() {
+    fun loadInitialData() {
         viewModelScope.launch {
-            val currentState = _uiState.value
-            val userData = UserData(
-                name = currentState.name,
-                age = currentState.age.toIntOrNull() ?: 0,
-                weight = currentState.weight.toDoubleOrNull() ?: 0.0,
-                height = currentState.height.toDoubleOrNull() ?: 0.0,
-                gender = currentState.gender,
-                activityLevel = currentState.activityLevel
-            )
-            userRepository.saveUserData(userData)
-            // TDEE akan dihitung ulang secara otomatis oleh 'collect' di init block
+            val savedUserData = userRepository.userDataFlow.first()
+            _uiState.update {
+                it.copy(
+                    name = savedUserData.name,
+                    age = if (savedUserData.age > 0) savedUserData.age.toString() else "",
+                    weight = if (savedUserData.weight > 0) savedUserData.weight.toString() else "",
+                    height = if (savedUserData.height > 0) savedUserData.height.toString() else "",
+                    gender = savedUserData.gender,
+                    activityLevel = savedUserData.activityLevel,
+                    imagePath = savedUserData.imagePath,
+                    tdee = savedUserData.tdee.toInt() // Sekarang ini valid
+                )
+            }
+            validateState()
         }
     }
 
-    private fun calculateTdee(userData: UserData): Int {
-        if (userData.weight <= 0 || userData.height <= 0 || userData.age <= 0) {
-            return 0
-        }
-
-        // Hitung BMR (Basal Metabolic Rate) menggunakan rumus Mifflin-St Jeor
-        val bmr = if (userData.gender == "Pria") {
-            (10 * userData.weight) + (6.25 * userData.height) - (5 * userData.age) + 5
-        } else { // Wanita
-            (10 * userData.weight) + (6.25 * userData.height) - (5 * userData.age) - 161
-        }
-
-        // Tentukan faktor aktivitas
-        val activityFactor = when (userData.activityLevel) {
-            "Jarang Olahraga" -> 1.2
-            "Aktivitas Ringan" -> 1.375
-            "Aktivitas Sedang" -> 1.55
-            "Sangat Aktif" -> 1.725
-            "Ekstra Aktif" -> 1.9
-            else -> 1.2
-        }
-
-        // Hitung TDEE dan bulatkan ke integer terdekat
-        return (bmr * activityFactor).roundToInt()
+    fun onNameChange(name: String) {
+        _uiState.update { it.copy(name = name) }
+        validateState()
     }
 
-    // PERUBAHAN: Fungsi baru untuk menangani perubahan gambar
+    fun onAgeChange(age: String) {
+        _uiState.update { it.copy(age = age) }
+        validateState()
+    }
+
+    fun onWeightChange(weight: String) {
+        _uiState.update { it.copy(weight = weight) }
+        validateState()
+    }
+
+    fun onHeightChange(height: String) {
+        _uiState.update { it.copy(height = height) }
+        validateState()
+    }
+
+    fun onGenderChange(gender: String) {
+        _uiState.update { it.copy(gender = gender) }
+    }
+
+    fun onActivityLevelChange(activityLevel: String) {
+        _uiState.update { it.copy(activityLevel = activityLevel) }
+    }
+
     fun onProfileImageChanged(bitmap: Bitmap) {
         viewModelScope.launch {
             val imagePath = userRepository.saveProfilePicture(bitmap)
             if (imagePath != null) {
                 _uiState.update { it.copy(imagePath = imagePath) }
-                // Langsung simpan path baru ke DataStore
-                val updatedUserData = userRepository.userDataFlow.first().copy(imagePath = imagePath)
-                userRepository.saveUserData(updatedUserData)
+                saveUserData()
             }
+        }
+    }
+
+    fun saveUserData() {
+        viewModelScope.launch {
+            val currentState = _uiState.value
+            // PERUBAHAN: Hitung TDEE sebelum menyimpan
+            val calculatedTdee = calculateTdee(
+                weight = currentState.weight.toFloatOrNull() ?: 0f,
+                height = currentState.height.toFloatOrNull() ?: 0f,
+                age = currentState.age.toIntOrNull() ?: 0,
+                gender = currentState.gender,
+                activityLevel = currentState.activityLevel
+            )
+            userRepository.saveUserData(
+                UserData(
+                    name = currentState.name,
+                    age = currentState.age.toIntOrNull() ?: 0,
+                    weight = currentState.weight.toDoubleOrNull() ?: 0.0,
+                    height = currentState.height.toDoubleOrNull() ?: 0.0,
+                    gender = currentState.gender,
+                    activityLevel = currentState.activityLevel,
+                    imagePath = currentState.imagePath,
+                    tdee = calculatedTdee // PERUBAHAN: Simpan TDEE yang sudah dihitung
+                )
+            )
+        }
+    }
+
+    // Fungsi untuk menghitung TDEE
+    private fun calculateTdee(weight: Float, height: Float, age: Int, gender: String, activityLevel: String): Float {
+        if (weight <= 0f || height <= 0f || age <= 0) return 0f
+
+        val bmr = if (gender == "Pria") {
+            (10 * weight) + (6.25f * height) - (5 * age) + 5
+        } else {
+            (10 * weight) + (6.25f * height) - (5 * age) - 161
+        }
+
+        val activityMultiplier = when (activityLevel) {
+            "Sedentary" -> 1.2f
+            "Light Activity" -> 1.375f
+            "Moderate Activity" -> 1.55f
+            "Very Active" -> 1.725f
+            "Extra Active" -> 1.9f
+            else -> 1.2f
+        }
+
+        return bmr * activityMultiplier
+    }
+
+    private fun validateState() {
+        val currentState = _uiState.value
+        val isDataValid = currentState.name.isNotBlank() &&
+                currentState.age.isNotBlank() &&
+                currentState.weight.isNotBlank() &&
+                currentState.height.isNotBlank()
+
+        _uiState.update {
+            it.copy(isConfirmButtonEnabled = isDataValid)
         }
     }
 }

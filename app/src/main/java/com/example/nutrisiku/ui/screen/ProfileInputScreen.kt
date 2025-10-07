@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cake
@@ -24,19 +25,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.nutrisiku.ui.screen.components.ActivityLevelDropdown
 import com.example.nutrisiku.ui.screen.components.GenderDropdown
 import com.example.nutrisiku.ui.viewmodel.ProfileViewModel
 
-
 @Composable
 fun ProfileInputScreen(
-    viewModel: ProfileViewModel, // Terima ViewModel sebagai parameter
+    viewModel: ProfileViewModel,
     onConfirmClick: () -> Unit
 ) {
-    // Ambil UI state dari ViewModel
     val uiState by viewModel.uiState.collectAsState()
 
     Scaffold { innerPadding ->
@@ -60,15 +61,23 @@ fun ProfileInputScreen(
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "* Semua kolom wajib diisi untuk melanjutkan.",
+                style = MaterialTheme.typography.bodySmall,
+                fontStyle = FontStyle.Italic,
+                color = MaterialTheme.colorScheme.primary
+            )
 
-            // Input Fields
+            Spacer(modifier = Modifier.height(16.dp))
+
             OutlinedTextField(
-                value = uiState.name, // Baca data dari state
-                onValueChange = { viewModel.onNameChange(it) }, // Kirim perubahan ke ViewModel
+                value = uiState.name,
+                onValueChange = { viewModel.onNameChange(it) },
                 label = { Text("Nama / Username") },
                 leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
             )
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -77,29 +86,34 @@ fun ProfileInputScreen(
                 onValueChange = { viewModel.onAgeChange(it) },
                 label = { Text("Umur (Tahun)") },
                 leadingIcon = { Icon(Icons.Default.Cake, contentDescription = null) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true
             )
             Spacer(modifier = Modifier.height(8.dp))
 
             OutlinedTextField(
-                value = uiState.weight, // Baca data dari state
-                onValueChange = { viewModel.onWeightChange(it) }, // Kirim perubahan ke ViewModel
+                value = uiState.weight,
+                onValueChange = { viewModel.onWeightChange(it) },
                 label = { Text("Berat Badan (kg)") },
                 leadingIcon = { Icon(Icons.Default.MonitorWeight, contentDescription = null) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true
             )
             Spacer(modifier = Modifier.height(8.dp))
 
             OutlinedTextField(
-                value = uiState.height, // Baca data dari state
-                onValueChange = { viewModel.onHeightChange(it) }, // Kirim perubahan ke ViewModel
+                value = uiState.height,
+                onValueChange = { viewModel.onHeightChange(it) },
                 label = { Text("Tinggi Badan (cm)") },
                 leadingIcon = { Icon(Icons.Default.Height, contentDescription = null) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            // PERBAIKAN: Gunakan GenderDropdown yang sudah benar
             GenderDropdown(
                 selectedGender = uiState.gender,
                 onGenderSelected = viewModel::onGenderChange
@@ -122,6 +136,8 @@ fun ProfileInputScreen(
 
             Button(
                 onClick = onConfirmClick,
+                // PERUBAHAN KUNCI: Status enabled tombol dikontrol oleh ViewModel
+                enabled = uiState.isConfirmButtonEnabled,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),

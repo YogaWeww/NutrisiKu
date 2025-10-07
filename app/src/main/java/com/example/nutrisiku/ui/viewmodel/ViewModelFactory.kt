@@ -26,7 +26,7 @@ class ViewModelFactory(private val application: Application) : ViewModelProvider
         // Buat instance ViewModel yang sesuai
         return when {
             modelClass.isAssignableFrom(ProfileViewModel::class.java) -> {
-                ProfileViewModel(application, userRepository) as T
+                ProfileViewModel(userRepository) as T
             }
             modelClass.isAssignableFrom(HistoryViewModel::class.java) -> {
                 HistoryViewModel(application, historyRepository) as T

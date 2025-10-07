@@ -73,7 +73,7 @@ fun NutrisiKuApp(
             ProfileInputScreen(
                 viewModel = profileViewModel,
                 onConfirmClick = {
-                    profileViewModel.saveProfile()
+                    profileViewModel.saveUserData()
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.ProfileInput.route) { inclusive = true }
                     }
@@ -108,7 +108,7 @@ fun NutrisiKuApp(
                 viewModel = profileViewModel,
                 onBackClick = { navController.navigateUp() },
                 onSaveClick = {
-                    profileViewModel.saveProfile()
+                    profileViewModel.saveUserData()
                     navController.navigateUp()
                 },
                 navigateToHome = { navController.navigate(Screen.Home.route) },
