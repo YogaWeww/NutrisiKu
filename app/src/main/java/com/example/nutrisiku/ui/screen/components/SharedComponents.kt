@@ -9,62 +9,18 @@ import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DirectionsRun
-import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.LockOpen
-import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material.icons.filled.Wc
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuDefaults
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -79,6 +35,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -94,7 +51,6 @@ import java.io.File
 import java.util.concurrent.Executors
 import kotlin.math.min
 
-// ... (Komponen lain seperti NutrisiKuBottomNavBar, DateHeader, dll. tetap sama) ...
 @Composable
 fun NutrisiKuBottomNavBar(
     currentRoute: String?,
@@ -180,13 +136,14 @@ fun HistoryEntryCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
-                model = File(imagePath),
+                model = if (imagePath.isNotEmpty()) File(imagePath) else R.drawable.logo_nutrisiku,
                 contentDescription = session,
                 modifier = Modifier
                     .size(56.dp)
                     .clip(RoundedCornerShape(12.dp)),
                 contentScale = ContentScale.Crop,
-                placeholder = painterResource(id = R.drawable.logo_nutrisiku)
+                placeholder = painterResource(id = R.drawable.logo_nutrisiku),
+                error = painterResource(id = R.drawable.logo_nutrisiku)
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -228,7 +185,8 @@ fun GenderDropdown(
         )
         ExposedDropdownMenu(
             expanded = isExpanded,
-            onDismissRequest = { isExpanded = false }
+            onDismissRequest = { isExpanded = false },
+            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
         ) {
             genderOptions.forEach { gender ->
                 DropdownMenuItem(
@@ -236,7 +194,10 @@ fun GenderDropdown(
                     onClick = {
                         onGenderSelected(gender)
                         isExpanded = false
-                    }
+                    },
+                    colors = MenuDefaults.itemColors(
+                        textColor = MaterialTheme.colorScheme.onSurface
+                    )
                 )
             }
         }
@@ -269,7 +230,8 @@ fun ActivityLevelDropdown(
         )
         ExposedDropdownMenu(
             expanded = isExpanded,
-            onDismissRequest = { isExpanded = false }
+            onDismissRequest = { isExpanded = false },
+            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
         ) {
             activityOptions.forEach { activity ->
                 DropdownMenuItem(
@@ -277,7 +239,10 @@ fun ActivityLevelDropdown(
                     onClick = {
                         onActivitySelected(activity)
                         isExpanded = false
-                    }
+                    },
+                    colors = MenuDefaults.itemColors(
+                        textColor = MaterialTheme.colorScheme.onSurface
+                    )
                 )
             }
         }
@@ -297,7 +262,6 @@ fun ImageResult(
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
-        // KODE CANVAS UNTUK MENGGAMBAR BOUNDING BOX DIHAPUS DARI SINI
     }
 }
 
@@ -308,7 +272,6 @@ fun CalorieCard(
     modifier: Modifier = Modifier
 ) {
     val remaining = total - consumed
-    // Pastikan progress tidak lebih dari 1.0f
     val progress = if (total > 0) (consumed.toFloat() / total.toFloat()).coerceIn(0f, 1f) else 0f
 
     Card(
@@ -380,7 +343,7 @@ fun RealtimeCameraView(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val detectionResults by viewModel.realtimeResults.collectAsState()
+    val realtimeUiState by viewModel.realtimeUiState.collectAsState()
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
     val previewView = remember { PreviewView(context) }
 
@@ -414,7 +377,7 @@ fun RealtimeCameraView(
     Box(modifier = modifier) {
         AndroidView({ previewView }, modifier = Modifier.fillMaxSize())
         OverlayCanvas(
-            results = detectionResults,
+            results = realtimeUiState.rawDetections,
             modifier = Modifier.fillMaxSize()
         )
     }
@@ -483,34 +446,29 @@ fun DetectionResultCard(
     onGalleryClick: () -> Unit
 ) {
     val realtimeUiState by viewModel.realtimeUiState.collectAsState()
-    val detectedItems = realtimeUiState.detectedItems
-    val totalCalories = realtimeUiState.totalCalories
 
-    // PERUBAHAN: Menggunakan Card untuk mendapatkan elevasi dan warna surface yang solid
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface // Menggunakan warna surface (Krem Pucat)
-        )
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Text("Hasil Deteksi", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Kolom ini sekarang memiliki tinggi maksimum dan bisa di-scroll
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 150.dp) // Batasi tinggi maksimum
-                    .verticalScroll(rememberScrollState()) // Tambahkan kemampuan scroll
+                    .heightIn(max = 200.dp)
+                    .verticalScroll(rememberScrollState())
             ) {
-                if (detectedItems.isNotEmpty()) {
-                    detectedItems.forEach { item ->
-                        RealtimeDetectionResultItem(item = item, onLockToggle = { viewModel.toggleLockState(item) })
+                if (realtimeUiState.groupedItems.isNotEmpty()) {
+                    realtimeUiState.groupedItems.forEach { item ->
+                        RealtimeDetectionResultItem(
+                            item = item,
+                            onLockToggle = { viewModel.toggleLockState(item) }
+                        )
                     }
                 } else {
                     Text("Arahkan kamera ke makanan Anda...", style = MaterialTheme.typography.bodyMedium)
@@ -527,7 +485,7 @@ fun DetectionResultCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text("Total Kalori Terkunci:", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
-                Text("${totalCalories} Kkal", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Text("${realtimeUiState.totalLockedCalories} Kkal", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -536,27 +494,12 @@ fun DetectionResultCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // PERUBAHAN: Mengembalikan warna tombol ke warna primer
-                Button(
-                    onClick = onGalleryClick,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    )
-                ) {
+                Button(onClick = onGalleryClick, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) {
                     Icon(Icons.Default.Image, contentDescription = "Galeri")
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Galeri")
                 }
-                Button(
-                    onClick = onManualClick,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    )
-                ) {
+                Button(onClick = onManualClick, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) {
                     Icon(Icons.Default.Edit, contentDescription = "Input Manual")
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Manual")
@@ -569,7 +512,7 @@ fun DetectionResultCard(
 @Composable
 fun RealtimeDetectionResultItem(
     item: DetectedFoodItem,
-    onLockToggle: () -> Unit
+    onLockToggle: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -577,23 +520,58 @@ fun RealtimeDetectionResultItem(
             .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = "${item.name} (${item.standardPortion}g)",
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(1f)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = "${item.calories} Kkal",
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            val displayText = if (item.quantity > 1) "${item.name} x${item.quantity}" else item.name
+            Text(text = displayText, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            Text(text = "${item.standardPortion}g", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+        }
+
+        Text(text = "${item.caloriesPerPortion * item.quantity} Kkal", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
         IconButton(onClick = onLockToggle) {
             Icon(
                 imageVector = if (item.isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
                 contentDescription = if (item.isLocked) "Buka Kunci" else "Kunci",
                 tint = if (item.isLocked) MaterialTheme.colorScheme.primary else Color.Gray
             )
+        }
+    }
+}
+
+@Composable
+fun QuantityEditor(
+    quantity: Int,
+    onDecrement: () -> Unit,
+    onIncrement: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
+        IconButton(
+            onClick = onDecrement,
+            modifier = Modifier.size(28.dp),
+            colors = IconButtonDefaults.iconButtonColors(
+                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                contentColor = MaterialTheme.colorScheme.primary
+            )
+        ) {
+            Icon(Icons.Default.Remove, contentDescription = "Kurangi Jumlah")
+        }
+
+        Text(
+            text = quantity.toString(),
+            modifier = Modifier.padding(horizontal = 12.dp),
+            fontWeight = FontWeight.Bold,
+            fontSize = 16.sp
+        )
+
+        IconButton(
+            onClick = onIncrement,
+            modifier = Modifier.size(28.dp),
+            colors = IconButtonDefaults.iconButtonColors(
+                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                contentColor = MaterialTheme.colorScheme.primary
+            )
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Tambah Jumlah")
         }
     }
 }
@@ -613,3 +591,49 @@ fun PermissionDeniedView(onRequestPermission: () -> Unit) {
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PortionEditDialog(
+    currentPortion: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (Int) -> Unit
+) {
+    var text by remember { mutableStateOf(currentPortion.toString()) }
+    val isError = text.toIntOrNull() == null || text.isBlank()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Ubah Porsi (gram)") },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                label = { Text("Porsi dalam gram") },
+                singleLine = true,
+                isError = isError,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val newPortion = text.toIntOrNull()
+                    if (newPortion != null) {
+                        onConfirm(newPortion)
+                    }
+                },
+                enabled = !isError
+            ) {
+                Text("Simpan")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Batal")
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.surface
+    )
+}
+

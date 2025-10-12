@@ -1,22 +1,24 @@
 package com.example.nutrisiku.ui.screen
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.nutrisiku.ui.screen.components.ImageResult
+import com.example.nutrisiku.ui.screen.components.PortionEditDialog
+import com.example.nutrisiku.ui.screen.components.QuantityEditor
+import com.example.nutrisiku.ui.viewmodel.DetectedFoodItem
 import com.example.nutrisiku.ui.viewmodel.DetectionViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -28,13 +30,28 @@ fun DetectionResultScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    // State untuk mengelola dialog edit porsi
+    var editingPortionItem by remember { mutableStateOf<IndexedValue<DetectedFoodItem>?>(null) }
+
+    // Tampilkan dialog jika ada item yang sedang diedit
+    editingPortionItem?.let { (index, item) ->
+        PortionEditDialog(
+            currentPortion = item.standardPortion,
+            onDismiss = { editingPortionItem = null },
+            onConfirm = { newPortion ->
+                viewModel.updatePortion(index, newPortion)
+                editingPortionItem = null
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("Hasil Deteksi", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Kembali")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Kembali")
                     }
                 }
             )
@@ -46,32 +63,39 @@ fun DetectionResultScreen(
                 .padding(innerPadding)
                 .padding(16.dp)
         ) {
-            // PERBAIKAN: Gunakan komponen ImageWithBoundingBoxes yang baru
             uiState.selectedBitmap?.let { bitmap ->
                 ImageResult(
                     bitmap = bitmap,
                     detectionResults = uiState.detectedItems.map { it.originalResult },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .aspectRatio(1f) // Menjaga rasio aspek 1:1
+                        .aspectRatio(1f)
                         .clip(RoundedCornerShape(16.dp))
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Daftar Makanan
+            Text(
+                "Rincian Makanan:",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Daftar Makanan dengan desain baru
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 itemsIndexed(uiState.detectedItems) { index, item ->
-                    DetectedItemRow(
-                        name = item.name,
-                        portion = item.standardPortion.toString(),
-                        calories = item.calories,
-                        onPortionChange = { newPortion ->
-                            viewModel.updatePortion(index, newPortion.toIntOrNull() ?: 0)
+                    FoodItemResultCard(
+                        item = item,
+                        onQuantityChange = { newQuantity ->
+                            viewModel.updateItemQuantity(item, newQuantity, isFromResultScreen = true)
+                        },
+                        onPortionChange = {
+                            editingPortionItem = IndexedValue(index, item)
                         }
                     )
                 }
@@ -86,7 +110,7 @@ fun DetectionResultScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("Total Kalori:", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                Text("${uiState.totalCalories} KKAL", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text("${uiState.totalCalories} KKAL", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -96,39 +120,77 @@ fun DetectionResultScreen(
                 onClick = onSaveClick,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp)
+                    .height(56.dp),
+                shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Simpan")
+                Text("Simpan", fontWeight = FontWeight.Bold)
             }
         }
     }
 }
 
 @Composable
-fun DetectedItemRow(
-    name: String,
-    portion: String,
-    calories: Int,
-    onPortionChange: (String) -> Unit
+fun FoodItemResultCard(
+    item: DetectedFoodItem,
+    onQuantityChange: (Int) -> Unit,
+    onPortionChange: () -> Unit
 ) {
-    Row(
+    Card(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(name, style = MaterialTheme.typography.bodyLarge)
-            Text("$calories KKAL", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Bagian Kiri: Nama & Porsi
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = item.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Porsi: ${item.standardPortion}g",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                    // --- PERUBAHAN: Mengganti teks dengan Ikon ---
+                    IconButton(
+                        onClick = onPortionChange,
+                        modifier = Modifier.size(24.dp) // Membuat target klik lebih kecil
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Ubah Porsi",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp) // Ukuran ikon di dalam tombol
+                        )
+                    }
+                }
+            }
+
+            // Bagian Tengah: Editor Kuantitas
+            QuantityEditor(
+                quantity = item.quantity,
+                onDecrement = { onQuantityChange(item.quantity - 1) },
+                onIncrement = { onQuantityChange(item.quantity + 1) }
+            )
+
+            // Bagian Kanan: Total Kalori per Item
+            Text(
+                text = "${item.caloriesPerPortion * item.quantity} Kkal",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(start = 16.dp)
+            )
         }
-
-        OutlinedTextField(
-            value = portion,
-            onValueChange = onPortionChange,
-            modifier = Modifier.width(120.dp),
-            label = { Text("gram") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-        )
-
-        // Tombol titik tiga telah dihapus dari sini
     }
 }
+

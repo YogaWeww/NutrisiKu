@@ -1,11 +1,6 @@
 package com.example.nutrisiku.ui.screen
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.KeyboardOptions
@@ -13,26 +8,20 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.DividerDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.nutrisiku.data.HistoryFoodItem
+import com.example.nutrisiku.ui.screen.components.QuantityEditor
 import com.example.nutrisiku.ui.viewmodel.HistoryDetailViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,6 +32,33 @@ fun EditHistoryScreen(
     onSaveClick: () -> Unit
 ) {
     val historyDetail by viewModel.historyDetail.collectAsState()
+    var itemIndexToDelete by remember { mutableStateOf<Int?>(null) }
+
+    if (itemIndexToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { itemIndexToDelete = null },
+            title = { Text("Hapus Makanan") },
+            text = { Text("Apakah Anda yakin ingin menghapus item ini dari riwayat?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        itemIndexToDelete?.let { viewModel.onDeleteItem(it) }
+                        itemIndexToDelete = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.secondary)
+                ) {
+                    Text("Hapus")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { itemIndexToDelete = null }) {
+                    Text("Batal")
+                }
+            },
+            // --- PERUBAHAN DI SINI ---
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -58,7 +74,6 @@ fun EditHistoryScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onSaveClick,
-                // PERBAIKAN: Terapkan warna tema
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
@@ -68,34 +83,25 @@ fun EditHistoryScreen(
     ) { innerPadding ->
         val detail = historyDetail
         if (detail == null) {
-            // Tampilkan loading
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
         } else {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(16.dp)
+                    .padding(innerPadding),
+                contentPadding = PaddingValues(16.dp)
             ) {
-                // ... (Tampilkan gambar dan total kalori seperti di detail screen)
                 itemsIndexed(detail.foodItems) { index, foodItem ->
                     EditableHistoryItem(
                         item = foodItem,
-                        onNameChange = { newName ->
-                            viewModel.onNameChange(index, newName)
-                        },
-                        onPortionChange = { newPortion ->
-                            viewModel.onPortionChange(index, newPortion)
-                        },
-                        // PERUBAHAN: Tambahkan aksi untuk menghapus item
-                        onDeleteItem = {
-                            viewModel.onDeleteItem(index)
-                        }
+                        onNameChange = { newName -> viewModel.onNameChange(index, newName) },
+                        onPortionChange = { newPortion -> viewModel.onPortionChange(index, newPortion) },
+                        onQuantityChange = { newQuantity -> viewModel.onQuantityChange(index, newQuantity) },
+                        onDeleteItem = { itemIndexToDelete = index }
                     )
-                    HorizontalDivider(
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        thickness = DividerDefaults.Thickness,
-                        color = DividerDefaults.color
-                    )
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 }
             }
         }
@@ -107,29 +113,49 @@ fun EditableHistoryItem(
     item: HistoryFoodItem,
     onNameChange: (String) -> Unit,
     onPortionChange: (String) -> Unit,
-    onDeleteItem: () -> Unit // PERUBAHAN: Tambahkan parameter callback
+    onQuantityChange: (Int) -> Unit,
+    onDeleteItem: () -> Unit
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        OutlinedTextField(
-            value = item.name,
-            onValueChange = onNameChange,
-            label = { Text("Nama Makanan") },
-            modifier = Modifier.weight(1f)
-        )
-        OutlinedTextField(
-            value = item.portion.toString(),
-            onValueChange = onPortionChange,
-            label = { Text("gram") },
-            modifier = Modifier.width(100.dp),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-        )
-        // PERUBAHAN: Tambahkan IconButton untuk hapus
-        IconButton(onClick = onDeleteItem) {
-            Icon(Icons.Default.Delete, contentDescription = "Hapus Item", tint = MaterialTheme.colorScheme.secondary)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            OutlinedTextField(
+                value = item.name,
+                onValueChange = onNameChange,
+                label = { Text("Nama Makanan") },
+                modifier = Modifier.weight(1f)
+            )
+            IconButton(onClick = onDeleteItem) {
+                Icon(Icons.Default.Delete, contentDescription = "Hapus Item", tint = MaterialTheme.colorScheme.secondary)
+            }
+        }
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            OutlinedTextField(
+                value = if (item.portion > 0) item.portion.toString() else "",
+                onValueChange = onPortionChange,
+                label = { Text("Porsi (g)") },
+                modifier = Modifier.weight(1f),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            QuantityEditor(
+                quantity = item.quantity,
+                onDecrement = { onQuantityChange(item.quantity - 1) },
+                onIncrement = { onQuantityChange(item.quantity + 1) }
+            )
         }
     }
 }
+

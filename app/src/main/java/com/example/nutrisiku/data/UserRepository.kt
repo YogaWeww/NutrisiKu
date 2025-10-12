@@ -3,13 +3,7 @@ package com.example.nutrisiku.data
 import android.content.Context
 import android.graphics.Bitmap
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.doublePreferencesKey
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.floatPreferencesKey
-import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -19,8 +13,6 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 
-// Ekstensi untuk membuat instance DataStore tunggal untuk seluruh aplikasi
-// Ganti nama DataStore agar lebih spesifik
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "nutrisiku_prefs")
 
 class UserRepository(private val context: Context) {
@@ -33,7 +25,7 @@ class UserRepository(private val context: Context) {
         val GENDER_KEY = stringPreferencesKey("user_gender")
         val ACTIVITY_LEVEL_KEY = stringPreferencesKey("user_activity_level")
         val IMAGE_PATH_KEY = stringPreferencesKey("user_image_path")
-        val TDEE_KEY = floatPreferencesKey("user_tdee") // PERUBAHAN: Key baru untuk TDEE
+        val TDEE_KEY = floatPreferencesKey("user_tdee")
         val ONBOARDING_COMPLETED_KEY = booleanPreferencesKey("onboarding_completed")
     }
 
@@ -47,7 +39,7 @@ class UserRepository(private val context: Context) {
                 gender = preferences[GENDER_KEY] ?: "Pria",
                 activityLevel = preferences[ACTIVITY_LEVEL_KEY] ?: "Aktivitas Ringan",
                 imagePath = preferences[IMAGE_PATH_KEY] ?: "",
-                tdee = preferences[TDEE_KEY] ?: 0f // PERUBAHAN: Baca data TDEE
+                tdee = preferences[TDEE_KEY] ?: 0f
             )
         }
 
@@ -64,7 +56,7 @@ class UserRepository(private val context: Context) {
             preferences[GENDER_KEY] = userData.gender
             preferences[ACTIVITY_LEVEL_KEY] = userData.activityLevel
             preferences[IMAGE_PATH_KEY] = userData.imagePath
-            preferences[TDEE_KEY] = userData.tdee // PERUBAHAN: Simpan data TDEE
+            preferences[TDEE_KEY] = userData.tdee
         }
     }
 
@@ -89,4 +81,13 @@ class UserRepository(private val context: Context) {
             }
         }
     }
+
+    // --- FUNGSI BARU UNTUK MENGHAPUS FOTO PROFIL ---
+    suspend fun deleteProfilePicture() {
+        context.dataStore.edit { preferences ->
+            // Menghapus path gambar akan membuatnya kembali ke default
+            preferences[IMAGE_PATH_KEY] = ""
+        }
+    }
 }
+

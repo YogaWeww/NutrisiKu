@@ -8,13 +8,14 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
 // Data class untuk satu item makanan dalam riwayat
+// --- PERUBAHAN: Tambahkan `quantity` di sini ---
 data class HistoryFoodItem(
     val name: String,
     val portion: Int,
-    val calories: Int
+    val calories: Int,
+    val quantity: Int // Tambahkan properti ini
 )
 
-// Entity yang merepresentasikan tabel di database Room
 @Entity(tableName = "history_table")
 @TypeConverters(FoodItemConverter::class)
 data class HistoryEntity(
@@ -22,12 +23,11 @@ data class HistoryEntity(
     val id: Int = 0,
     val timestamp: Long,
     val sessionLabel: String,
-    val imagePath: String, // Path ke gambar yang disimpan di internal storage
+    val imagePath: String,
     val totalCalories: Int,
     val foodItems: List<HistoryFoodItem>
 )
 
-// Type Converter untuk mengubah List<HistoryFoodItem> menjadi String JSON dan sebaliknya
 class FoodItemConverter {
     @TypeConverter
     fun fromFoodItemList(foodItems: List<HistoryFoodItem>): String {

@@ -3,7 +3,6 @@ package com.example.nutrisiku.ui.viewmodel
 import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.Matrix
-import android.util.Log
 import androidx.camera.core.ImageProxy
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -24,11 +23,14 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.util.Calendar
+import java.util.UUID
 
 data class DetectedFoodItem(
+    val id: String = UUID.randomUUID().toString(),
     val name: String,
     val standardPortion: Int,
-    val calories: Int,
+    val caloriesPerPortion: Int,
+    var quantity: Int = 1,
     val originalResult: DetectionResult,
     val isLocked: Boolean = false
 )
@@ -37,9 +39,16 @@ data class DetectionUiState(
     val selectedBitmap: Bitmap? = null,
     val detectedItems: List<DetectedFoodItem> = emptyList(),
     val totalCalories: Int = 0,
-    val isLoading: Boolean = false,
+    val isLoading: Boolean = false
+)
+
+data class RealtimeUiState(
+    val groupedItems: List<DetectedFoodItem> = emptyList(),
+    val rawDetections: List<DetectionResult> = emptyList(),
+    val totalLockedCalories: Int = 0,
     val isConfirmEnabled: Boolean = false
 )
+
 
 class DetectionViewModel(
     application: Application,
@@ -53,18 +62,14 @@ class DetectionViewModel(
     private val foodDetector = FoodDetector(application)
     private val nutritionData: Map<String, FoodNutrition> = nutritionRepository.getNutritionData()
 
-    private val _realtimeResults = MutableStateFlow<List<DetectionResult>>(emptyList())
-    val realtimeResults = _realtimeResults.asStateFlow()
-
-    private val _realtimeUiState = MutableStateFlow(DetectionUiState())
+    private val _realtimeUiState = MutableStateFlow(RealtimeUiState())
     val realtimeUiState = _realtimeUiState.asStateFlow()
 
     private var lastAnalyzedTimestamp = 0L
     private var currentFrameBitmap: Bitmap? = null
 
     fun clearDetectionState() {
-        _realtimeUiState.value = DetectionUiState()
-        _realtimeResults.value = emptyList()
+        _realtimeUiState.value = RealtimeUiState()
         currentFrameBitmap = null
     }
 
@@ -77,7 +82,6 @@ class DetectionViewModel(
 
             viewModelScope.launch(Dispatchers.Default) {
                 val results = foodDetector.detect(bitmap)
-                _realtimeResults.value = results
                 processRealtimeDetections(results)
             }
             lastAnalyzedTimestamp = currentTimestamp
@@ -85,64 +89,91 @@ class DetectionViewModel(
         imageProxy.close()
     }
 
-    // --- PERBAIKAN UTAMA DI SINI ---
     private fun processRealtimeDetections(results: List<DetectionResult>) {
-        // 1. Ambil item yang sudah dikunci dari state saat ini
-        val lockedItems = _realtimeUiState.value.detectedItems.filter { it.isLocked }
-        val lockedItemNames = lockedItems.map { it.name }
+        viewModelScope.launch {
+            val lockedItems = _realtimeUiState.value.groupedItems.filter { it.isLocked }
+            val lockedItemNames = lockedItems.map { it.name }
 
-        // 2. Ubah hasil deteksi mentah dari model menjadi list item yang bisa ditampilkan
-        val newDetectedItems = results.mapNotNull { result ->
-            val foodInfo = nutritionData[result.label]
-            if (foodInfo != null) {
-                val calories = (foodInfo.kalori_per_100g / 100.0 * foodInfo.porsi_standar_g).toInt()
-                DetectedFoodItem(
-                    name = foodInfo.nama_tampilan,
-                    standardPortion = foodInfo.porsi_standar_g,
-                    calories = calories,
-                    originalResult = result,
-                    isLocked = false
+            val newItems = results
+                .filter { result -> nutritionData.containsKey(result.label) }
+                .groupBy { result -> nutritionData[result.label]!!.nama_tampilan }
+                .mapNotNull { (name, group) ->
+                    if (name in lockedItemNames) {
+                        null
+                    } else {
+                        val firstResult = group.first()
+                        val foodInfo = nutritionData[firstResult.label]!!
+                        val calories = (foodInfo.kalori_per_100g / 100.0 * foodInfo.porsi_standar_g).toInt()
+                        DetectedFoodItem(
+                            name = name,
+                            standardPortion = foodInfo.porsi_standar_g,
+                            caloriesPerPortion = calories,
+                            quantity = group.size,
+                            originalResult = firstResult,
+                            isLocked = false
+                        )
+                    }
+                }
+
+            val finalDisplayList = (lockedItems + newItems).distinctBy { it.name }
+
+            _realtimeUiState.update {
+                it.copy(
+                    groupedItems = finalDisplayList,
+                    rawDetections = results
                 )
-            } else {
-                null
             }
-        }
-
-        // 3. Filter item baru, buang yang namanya sama dengan item yang sudah dikunci
-        val uniqueNewItems = newDetectedItems.filter { it.name !in lockedItemNames }
-
-        // 4. Gabungkan: item yang sudah dikunci + item baru yang unik
-        val finalDisplayList = lockedItems + uniqueNewItems
-
-        // 5. Update UI state dengan daftar final
-        _realtimeUiState.update {
-            it.copy(detectedItems = finalDisplayList)
         }
     }
 
 
     fun toggleLockState(itemToToggle: DetectedFoodItem) {
         _realtimeUiState.update { currentState ->
-            val updatedItems = currentState.detectedItems.map {
+            val updatedItems = currentState.groupedItems.map {
                 if (it.name == itemToToggle.name) {
                     it.copy(isLocked = !it.isLocked)
                 } else {
                     it
                 }
             }
-            val lockedItems = updatedItems.filter { it.isLocked }
-            val newTotalCalories = lockedItems.sumOf { it.calories }
+            val newLockedItems = updatedItems.filter { it.isLocked }
+            val newTotalCalories = newLockedItems.sumOf { it.caloriesPerPortion * it.quantity }
             currentState.copy(
-                detectedItems = updatedItems,
-                totalCalories = newTotalCalories,
-                isConfirmEnabled = lockedItems.isNotEmpty()
+                groupedItems = updatedItems,
+                totalLockedCalories = newTotalCalories,
+                isConfirmEnabled = newLockedItems.isNotEmpty()
             )
         }
     }
 
+    // --- PERBAIKAN: Kembalikan parameter 'isFromResultScreen' ---
+    fun updateItemQuantity(itemToUpdate: DetectedFoodItem, newQuantity: Int, isFromResultScreen: Boolean) {
+        val targetQuantity = newQuantity.coerceAtLeast(1)
+
+        if (isFromResultScreen) {
+            // Logika untuk layar hasil
+            _uiState.update { currentState ->
+                val updatedItems = currentState.detectedItems.map {
+                    if (it.id == itemToUpdate.id) it.copy(quantity = targetQuantity) else it
+                }
+                val newTotalCalories = updatedItems.sumOf { it.caloriesPerPortion * it.quantity }
+                currentState.copy(detectedItems = updatedItems, totalCalories = newTotalCalories)
+            }
+        } else {
+            // Logika untuk layar real-time (tidak digunakan lagi tapi tetap ada)
+            _realtimeUiState.update { currentState ->
+                val updatedItems = currentState.groupedItems.map {
+                    if (it.name == itemToUpdate.name) it.copy(quantity = targetQuantity) else it
+                }
+                val newTotalCalories = updatedItems.filter { it.isLocked }.sumOf { it.caloriesPerPortion * it.quantity }
+                currentState.copy(groupedItems = updatedItems, totalLockedCalories = newTotalCalories)
+            }
+        }
+    }
+
     fun confirmRealtimeDetection() {
-        val confirmedItems = _realtimeUiState.value.detectedItems.filter { it.isLocked }
-        val totalCalories = _realtimeUiState.value.totalCalories
+        val confirmedItems = _realtimeUiState.value.groupedItems.filter { it.isLocked }
+        val totalCalories = _realtimeUiState.value.totalLockedCalories
 
         _uiState.update {
             it.copy(
@@ -163,23 +194,28 @@ class DetectionViewModel(
     }
 
     private fun processDetections(results: List<DetectionResult>) {
-        val foodItems = mutableListOf<DetectedFoodItem>()
-        var totalCalories = 0
-        results.forEach { result ->
-            val foodInfo = nutritionData[result.label]
-            if (foodInfo != null) {
-                val calories = (foodInfo.kalori_per_100g / 100.0 * foodInfo.porsi_standar_g).toInt()
-                foodItems.add(
+        val foodItems = results
+            .groupBy { result -> nutritionData[result.label]?.nama_tampilan }
+            .mapNotNull { (name, group) ->
+                if (name != null) {
+                    val firstResult = group.first()
+                    val foodInfo = nutritionData[firstResult.label]!!
+                    val calories = (foodInfo.kalori_per_100g / 100.0 * foodInfo.porsi_standar_g).toInt()
                     DetectedFoodItem(
-                        name = foodInfo.nama_tampilan,
+                        name = name,
                         standardPortion = foodInfo.porsi_standar_g,
-                        calories = calories,
-                        originalResult = result
+                        caloriesPerPortion = calories,
+                        quantity = group.size,
+                        originalResult = firstResult,
+                        isLocked = true // Item dari galeri otomatis terkunci
                     )
-                )
-                totalCalories += calories
+                } else {
+                    null
+                }
             }
-        }
+
+        val totalCalories = foodItems.sumOf { it.caloriesPerPortion * it.quantity }
+
         _uiState.update {
             it.copy(
                 detectedItems = foodItems,
@@ -188,6 +224,7 @@ class DetectionViewModel(
             )
         }
     }
+
 
     fun saveDetectionToHistory() {
         viewModelScope.launch {
@@ -200,14 +237,15 @@ class DetectionViewModel(
                         timestamp = System.currentTimeMillis(),
                         sessionLabel = getSessionLabel(),
                         imagePath = imagePath,
-                        totalCalories = currentState.totalCalories,
                         foodItems = currentState.detectedItems.map {
                             HistoryFoodItem(
                                 name = it.name,
                                 portion = it.standardPortion,
-                                calories = it.calories
+                                calories = it.caloriesPerPortion,
+                                quantity = it.quantity
                             )
-                        }
+                        },
+                        totalCalories = currentState.totalCalories
                     )
                     historyRepository.insert(historyEntity)
                 }
@@ -246,23 +284,24 @@ class DetectionViewModel(
             val updatedItems = currentState.detectedItems.toMutableList()
             if (itemIndex in updatedItems.indices) {
                 val oldItem = updatedItems[itemIndex]
-                val foodInfo = nutritionData[oldItem.originalResult.label]
+                // Cari info nutrisi berdasarkan nama tampilan
+                val foodInfo = nutritionData.values.find { it.nama_tampilan == oldItem.name }
                 if (foodInfo != null) {
                     val newCalories = (foodInfo.kalori_per_100g / 100.0 * newPortion).toInt()
                     updatedItems[itemIndex] = oldItem.copy(
                         standardPortion = newPortion,
-                        calories = newCalories
+                        caloriesPerPortion = newCalories
                     )
-                    val newTotalCalories = updatedItems.sumOf { it.calories }
+                    val newTotalCalories = updatedItems.sumOf { it.caloriesPerPortion * it.quantity }
                     currentState.copy(
                         detectedItems = updatedItems,
                         totalCalories = newTotalCalories
                     )
                 } else {
-                    currentState
+                    currentState // Item tidak ditemukan di data nutrisi
                 }
             } else {
-                currentState
+                currentState // Indeks di luar jangkauan
             }
         }
     }
@@ -272,3 +311,4 @@ class DetectionViewModel(
         return Bitmap.createBitmap(this, 0, 0, width, height, matrix, true)
     }
 }
+

@@ -1,13 +1,13 @@
 package com.example.nutrisiku.ui.viewmodel
 
 import android.app.Application
-import android.os.Bundle
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.example.nutrisiku.data.FoodNutrition
 import com.example.nutrisiku.data.HistoryEntity
+import com.example.nutrisiku.data.HistoryFoodItem
 import com.example.nutrisiku.data.HistoryRepository
 import com.example.nutrisiku.data.NutritionRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,40 +17,30 @@ import kotlinx.coroutines.launch
 
 class HistoryDetailViewModel(
     application: Application,
-    // GANTI 'arguments: Bundle?' DENGAN 'savedStateHandle: SavedStateHandle'
     private val savedStateHandle: SavedStateHandle,
     private val historyRepository: HistoryRepository,
     private val nutritionRepository: NutritionRepository
 ) : AndroidViewModel(application) {
 
-    // Ambil historyId langsung dari SavedStateHandle
     private val historyId: Int = savedStateHandle.get<Int>("historyId") ?: -1
 
     private val _historyDetail = MutableStateFlow<HistoryEntity?>(null)
     val historyDetail = _historyDetail.asStateFlow()
 
-    private val nutritionData: Map<String, FoodNutrition> = nutritionRepository.getNutritionData()
+    private val nutritionData: Map<String, FoodNutrition> by lazy {
+        nutritionRepository.getNutritionData()
+    }
 
     init {
-        Log.d("HistoryDetailVM", "Attempting to load history with ID: $historyId")
-
         if (historyId != -1) {
             viewModelScope.launch {
                 historyRepository.getHistoryById(historyId).collect { entity ->
                     _historyDetail.value = entity
-                    if (entity != null) {
-                        Log.d("HistoryDetailVM", "Successfully loaded data for ID $historyId")
-                    } else {
-                        Log.w("HistoryDetailVM", "No data found for ID $historyId")
-                    }
                 }
             }
-        } else {
-            Log.e("HistoryDetailVM", "Invalid or missing History ID.")
         }
     }
 
-    // ... (sisa kode ViewModel tidak perlu diubah) ...
     fun onNameChange(itemIndex: Int, newName: String) {
         _historyDetail.update { currentDetail ->
             currentDetail?.copy(
@@ -80,13 +70,28 @@ class HistoryDetailViewModel(
                         calories = newCalories
                     )
                 }
-                val newTotalCalories = updatedItems.sumOf { item -> item.calories }
+                val newTotalCalories = updatedItems.sumOf { item -> item.calories * item.quantity }
                 it.copy(foodItems = updatedItems, totalCalories = newTotalCalories)
             }
         }
     }
 
-    // PERUBAHAN: Fungsi baru untuk menghapus item dari daftar
+    fun onQuantityChange(itemIndex: Int, newQuantity: Int) {
+        if (newQuantity <= 0) return // Kuantitas tidak boleh kurang dari 1
+
+        _historyDetail.update { currentDetail ->
+            currentDetail?.let {
+                val updatedItems = it.foodItems.toMutableList()
+                if (itemIndex in updatedItems.indices) {
+                    val oldItem = updatedItems[itemIndex]
+                    updatedItems[itemIndex] = oldItem.copy(quantity = newQuantity)
+                }
+                val newTotalCalories = updatedItems.sumOf { item -> item.calories * item.quantity }
+                it.copy(foodItems = updatedItems, totalCalories = newTotalCalories)
+            }
+        }
+    }
+
     fun onDeleteItem(itemIndex: Int) {
         _historyDetail.update { currentDetail ->
             currentDetail?.let {
@@ -94,16 +99,26 @@ class HistoryDetailViewModel(
                 if (itemIndex in updatedItems.indices) {
                     updatedItems.removeAt(itemIndex)
                 }
-                val newTotalCalories = updatedItems.sumOf { item -> item.calories }
+                val newTotalCalories = updatedItems.sumOf { item -> item.calories * item.quantity }
                 it.copy(foodItems = updatedItems, totalCalories = newTotalCalories)
             }
         }
     }
 
-    fun updateHistory() {
+    // --- PERUBAHAN LOGIKA UTAMA DI SINI ---
+    fun updateOrDeleteHistory() {
         viewModelScope.launch {
-            _historyDetail.value?.let {
-                historyRepository.update(it)
+            _historyDetail.value?.let { detail ->
+                // Jika setelah diedit daftar makanannya kosong
+                if (detail.foodItems.isEmpty()) {
+                    // Hapus seluruh entri riwayat
+                    historyRepository.delete(detail)
+                    Log.d("HistoryDetailVM", "History item deleted because it was empty.")
+                } else {
+                    // Jika masih ada item, update seperti biasa
+                    historyRepository.update(detail)
+                    Log.d("HistoryDetailVM", "History item updated.")
+                }
             }
         }
     }
@@ -116,3 +131,4 @@ class HistoryDetailViewModel(
         }
     }
 }
+

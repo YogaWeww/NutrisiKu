@@ -20,8 +20,10 @@ data class EditProfileUiState(
     val gender: String = "Pria",
     val activityLevel: String = "Aktivitas Ringan",
     val imagePath: String = "",
-    val tdee: Int = 0, // Properti ini sekarang akan diisi dengan benar
-    val isConfirmButtonEnabled: Boolean = false
+    val tdee: Int = 0,
+    val isConfirmButtonEnabled: Boolean = false,
+    // --- STATE BARU UNTUK MENGONTROL MENU OPSI ---
+    val showProfileImageOptions: Boolean = false
 )
 
 class ProfileViewModel(private val userRepository: UserRepository) : ViewModel() {
@@ -41,7 +43,7 @@ class ProfileViewModel(private val userRepository: UserRepository) : ViewModel()
                         gender = userData.gender,
                         activityLevel = userData.activityLevel,
                         imagePath = userData.imagePath,
-                        tdee = userData.tdee.toInt() // Sekarang ini valid
+                        tdee = userData.tdee.toInt()
                     )
                 }
                 validateState()
@@ -61,40 +63,19 @@ class ProfileViewModel(private val userRepository: UserRepository) : ViewModel()
                     gender = savedUserData.gender,
                     activityLevel = savedUserData.activityLevel,
                     imagePath = savedUserData.imagePath,
-                    tdee = savedUserData.tdee.toInt() // Sekarang ini valid
+                    tdee = savedUserData.tdee.toInt()
                 )
             }
             validateState()
         }
     }
 
-    fun onNameChange(name: String) {
-        _uiState.update { it.copy(name = name) }
-        validateState()
-    }
-
-    fun onAgeChange(age: String) {
-        _uiState.update { it.copy(age = age) }
-        validateState()
-    }
-
-    fun onWeightChange(weight: String) {
-        _uiState.update { it.copy(weight = weight) }
-        validateState()
-    }
-
-    fun onHeightChange(height: String) {
-        _uiState.update { it.copy(height = height) }
-        validateState()
-    }
-
-    fun onGenderChange(gender: String) {
-        _uiState.update { it.copy(gender = gender) }
-    }
-
-    fun onActivityLevelChange(activityLevel: String) {
-        _uiState.update { it.copy(activityLevel = activityLevel) }
-    }
+    fun onNameChange(name: String) { _uiState.update { it.copy(name = name) }; validateState() }
+    fun onAgeChange(age: String) { _uiState.update { it.copy(age = age) }; validateState() }
+    fun onWeightChange(weight: String) { _uiState.update { it.copy(weight = weight) }; validateState() }
+    fun onHeightChange(height: String) { _uiState.update { it.copy(height = height) }; validateState() }
+    fun onGenderChange(gender: String) { _uiState.update { it.copy(gender = gender) } }
+    fun onActivityLevelChange(activityLevel: String) { _uiState.update { it.copy(activityLevel = activityLevel) } }
 
     fun onProfileImageChanged(bitmap: Bitmap) {
         viewModelScope.launch {
@@ -106,10 +87,25 @@ class ProfileViewModel(private val userRepository: UserRepository) : ViewModel()
         }
     }
 
+    // --- FUNGSI-FUNGSI BARU UNTUK MENU OPSI ---
+    fun onProfileImageClicked() {
+        _uiState.update { it.copy(showProfileImageOptions = true) }
+    }
+
+    fun onDismissProfileImageOptions() {
+        _uiState.update { it.copy(showProfileImageOptions = false) }
+    }
+
+    fun onDeleteProfileImage() {
+        viewModelScope.launch {
+            userRepository.deleteProfilePicture()
+            onDismissProfileImageOptions() // Tutup menu setelah menghapus
+        }
+    }
+
     fun saveUserData() {
         viewModelScope.launch {
             val currentState = _uiState.value
-            // PERUBAHAN: Hitung TDEE sebelum menyimpan
             val calculatedTdee = calculateTdee(
                 weight = currentState.weight.toFloatOrNull() ?: 0f,
                 height = currentState.height.toFloatOrNull() ?: 0f,
@@ -126,13 +122,12 @@ class ProfileViewModel(private val userRepository: UserRepository) : ViewModel()
                     gender = currentState.gender,
                     activityLevel = currentState.activityLevel,
                     imagePath = currentState.imagePath,
-                    tdee = calculatedTdee // PERUBAHAN: Simpan TDEE yang sudah dihitung
+                    tdee = calculatedTdee
                 )
             )
         }
     }
 
-    // Fungsi untuk menghitung TDEE
     private fun calculateTdee(weight: Float, height: Float, age: Int, gender: String, activityLevel: String): Float {
         if (weight <= 0f || height <= 0f || age <= 0) return 0f
 
@@ -143,11 +138,11 @@ class ProfileViewModel(private val userRepository: UserRepository) : ViewModel()
         }
 
         val activityMultiplier = when (activityLevel) {
-            "Sedentary" -> 1.2f
-            "Light Activity" -> 1.375f
-            "Moderate Activity" -> 1.55f
-            "Very Active" -> 1.725f
-            "Extra Active" -> 1.9f
+            "Jarang Olahraga" -> 1.2f
+            "Aktivitas Ringan" -> 1.375f
+            "Aktivitas Sedang" -> 1.55f
+            "Sangat Aktif" -> 1.725f
+            "Ekstra Aktif" -> 1.9f
             else -> 1.2f
         }
 
@@ -166,3 +161,4 @@ class ProfileViewModel(private val userRepository: UserRepository) : ViewModel()
         }
     }
 }
+

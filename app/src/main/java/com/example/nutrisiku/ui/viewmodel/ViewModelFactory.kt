@@ -9,8 +9,6 @@ import com.example.nutrisiku.data.HistoryRepository
 import com.example.nutrisiku.data.NutritionRepository
 import com.example.nutrisiku.data.UserRepository
 
-// GANTI kelas factory Anda dengan yang ini
-// PERBAIKAN: Menggunakan ViewModelProvider.Factory modern, tidak lagi AbstractSavedStateViewModelFactory
 class ViewModelFactory(private val application: Application) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
@@ -25,6 +23,10 @@ class ViewModelFactory(private val application: Application) : ViewModelProvider
 
         // Buat instance ViewModel yang sesuai
         return when {
+            // --- PERBAIKAN: Tambahkan case untuk MainViewModel di sini ---
+            modelClass.isAssignableFrom(MainViewModel::class.java) -> {
+                MainViewModel(application) as T
+            }
             modelClass.isAssignableFrom(ProfileViewModel::class.java) -> {
                 ProfileViewModel(userRepository) as T
             }
@@ -37,7 +39,6 @@ class ViewModelFactory(private val application: Application) : ViewModelProvider
             modelClass.isAssignableFrom(ManualInputViewModel::class.java) -> {
                 ManualInputViewModel(application, historyRepository) as T
             }
-            // ViewModel ini sekarang akan menerima SavedStateHandle yang benar
             modelClass.isAssignableFrom(HistoryDetailViewModel::class.java) -> {
                 HistoryDetailViewModel(application, savedStateHandle, historyRepository, nutritionRepository) as T
             }
@@ -45,3 +46,4 @@ class ViewModelFactory(private val application: Application) : ViewModelProvider
         }
     }
 }
+

@@ -23,6 +23,7 @@ data class ManualInputUiState(
     val foodName: String = "",
     val portion: String = "",
     val calories: String = "",
+    val quantity: Int = 1, // --- PERUBAHAN: Tambahkan kuantitas ---
     val selectedBitmap: Bitmap? = null,
     val errorMessage: String? = null,
     val isSaveSuccess: Boolean = false
@@ -36,11 +37,17 @@ class ManualInputViewModel(
     private val _uiState = MutableStateFlow(ManualInputUiState())
     val uiState = _uiState.asStateFlow()
 
-    // ... (fungsi on...Change tetap sama) ...
     fun onFoodNameChange(name: String) { _uiState.update { it.copy(foodName = name) } }
     fun onPortionChange(portion: String) { _uiState.update { it.copy(portion = portion) } }
     fun onCaloriesChange(calories: String) { _uiState.update { it.copy(calories = calories) } }
     fun onImageSelected(bitmap: Bitmap) { _uiState.update { it.copy(selectedBitmap = bitmap) } }
+
+    // --- PERUBAHAN: Fungsi untuk mengubah kuantitas ---
+    fun onQuantityChange(newQuantity: Int) {
+        if (newQuantity >= 1) {
+            _uiState.update { it.copy(quantity = newQuantity) }
+        }
+    }
 
     fun clearState() {
         _uiState.value = ManualInputUiState()
@@ -52,12 +59,10 @@ class ManualInputViewModel(
 
     fun saveManualEntry() {
         viewModelScope.launch {
-            Log.d("DEBUG_DB", "saveManualEntry: Fungsi dipanggil.") // Log 1: Memastikan fungsi berjalan
             val currentState = _uiState.value
 
             if (currentState.foodName.isBlank() || currentState.calories.isBlank()) {
                 _uiState.update { it.copy(errorMessage = "Nama makanan dan kalori wajib diisi.") }
-                Log.e("DEBUG_DB", "saveManualEntry: Gagal, validasi tidak terpenuhi.") // Log 2: Gagal validasi
                 return@launch
             }
 
@@ -67,24 +72,25 @@ class ManualInputViewModel(
                 ""
             }
 
+            val caloriesPerItem = currentState.calories.toIntOrNull() ?: 0
+            val totalCalories = caloriesPerItem * currentState.quantity
+
             val historyFoodItem = HistoryFoodItem(
                 name = currentState.foodName,
                 portion = currentState.portion.toIntOrNull() ?: 0,
-                calories = currentState.calories.toIntOrNull() ?: 0
+                calories = caloriesPerItem,
+                quantity = currentState.quantity // --- PERUBAHAN: Simpan kuantitas ---
             )
 
             val historyEntity = HistoryEntity(
                 timestamp = System.currentTimeMillis(),
                 sessionLabel = getSessionLabel(),
                 imagePath = imagePath ?: "",
-                totalCalories = historyFoodItem.calories,
+                totalCalories = totalCalories, // --- PERUBAHAN: Gunakan total kalori ---
                 foodItems = listOf(historyFoodItem)
             )
 
-            Log.d("DEBUG_DB", "saveManualEntry: Siap untuk insert ke database.") // Log 3: Tepat sebelum insert
             historyRepository.insert(historyEntity)
-            Log.d("DEBUG_DB", "saveManualEntry: Insert ke database berhasil.") // Log 4: Setelah insert
-
             _uiState.update { it.copy(isSaveSuccess = true) }
         }
     }

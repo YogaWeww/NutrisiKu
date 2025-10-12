@@ -106,23 +106,3 @@ fun HistoryScreen(
         }
     }
 }
-
-
-
-
-// --- Previews ---
-//@Preview(showBackground = true, device = "id:pixel_5")
-//@Composable
-//fun HistoryScreenPreview() {
-//    NutrisiKuTheme {
-//        HistoryScreen(onBackClick = {}, onHistoryItemClick = {})
-//    }
-//}
-
-//@Preview(showBackground = true, device = "id:pixel_5")
-//@Composable
-//fun HistoryDetailScreenPreview() {
-//    NutrisiKuTheme {
-//        HistoryDetailScreen(onBackClick = {})
-//    }
-//}

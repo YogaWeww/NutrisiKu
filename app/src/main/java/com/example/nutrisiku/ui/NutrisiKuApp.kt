@@ -10,7 +10,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.nutrisiku.ui.navigation.Screen
-import com.example.nutrisiku.ui.screen.CameraScreen
 import com.example.nutrisiku.ui.screen.DetectionResultScreen
 import com.example.nutrisiku.ui.screen.DetectionScreen
 import com.example.nutrisiku.ui.screen.EditHistoryScreen
@@ -22,7 +21,6 @@ import com.example.nutrisiku.ui.screen.ManualInputScreen
 import com.example.nutrisiku.ui.screen.OnboardingScreen
 import com.example.nutrisiku.ui.screen.ProfileInputScreen
 import com.example.nutrisiku.ui.screen.ProfileScreen
-import com.example.nutrisiku.ui.screen.SplashScreen
 import com.example.nutrisiku.ui.viewmodel.DetectionViewModel
 import com.example.nutrisiku.ui.viewmodel.HistoryDetailViewModel
 import com.example.nutrisiku.ui.viewmodel.HistoryViewModel
@@ -77,7 +75,6 @@ fun NutrisiKuApp(
                 profileViewModel = profileViewModel,
                 historyViewModel = historyViewModel,
                 navigateToProfile = { navController.navigate(Screen.Profile.route) },
-                // PERBAIKAN: Panggil clearDetectionState saat memulai deteksi
                 navigateToDetection = {
                     detectionViewModel.clearDetectionState()
                     navController.navigate(Screen.Detection.route)
@@ -93,7 +90,10 @@ fun NutrisiKuApp(
                 onEditProfileClick = { navController.navigate(Screen.EditProfile.route) },
                 onBackClick = { navController.navigateUp() },
                 navigateToHome = { navController.navigate(Screen.Home.route) },
-                navigateToDetection = { navController.navigate(Screen.Detection.route) },
+                navigateToDetection = {
+                    detectionViewModel.clearDetectionState()
+                    navController.navigate(Screen.Detection.route)
+                },
                 navigateToHistory = { navController.navigate(Screen.History.route) }
             )
         }
@@ -107,7 +107,6 @@ fun NutrisiKuApp(
                     navController.navigateUp()
                 },
                 navigateToHome = { navController.navigate(Screen.Home.route) },
-                // PERBAIKAN: Panggil clearDetectionState saat memulai deteksi
                 navigateToDetection = {
                     detectionViewModel.clearDetectionState()
                     navController.navigate(Screen.Detection.route)
@@ -124,7 +123,6 @@ fun NutrisiKuApp(
                     navController.navigate(Screen.HistoryDetail.createRoute(historyId))
                 },
                 navigateToHome = { navController.navigate(Screen.Home.route) },
-                // PERBAIKAN: Panggil clearDetectionState saat memulai deteksi
                 navigateToDetection = {
                     detectionViewModel.clearDetectionState()
                     navController.navigate(Screen.Detection.route)
@@ -148,7 +146,6 @@ fun NutrisiKuApp(
                     navController.navigate(Screen.EditHistory.createRoute(historyId))
                 },
                 navigateToHome = { navController.navigate(Screen.Home.route) },
-                // PERBAIKAN: Panggil clearDetectionState saat memulai deteksi
                 navigateToDetection = {
                     detectionViewModel.clearDetectionState()
                     navController.navigate(Screen.Detection.route)
@@ -166,8 +163,11 @@ fun NutrisiKuApp(
                 viewModel = viewModel,
                 onBackClick = { navController.navigateUp() },
                 onSaveClick = {
-                    viewModel.updateHistory()
-                    navController.popBackStack(Screen.History.route, false)
+                    // --- PERUBAHAN DI SINI ---
+                    // Panggil fungsi baru yang memiliki logika hapus-jika-kosong
+                    viewModel.updateOrDeleteHistory()
+                    // Navigasi kembali ke halaman riwayat
+                    navController.popBackStack(Screen.History.route, inclusive = false)
                 }
             )
         }
@@ -201,7 +201,7 @@ fun NutrisiKuApp(
                     manualInputViewModel.clearState()
                     navController.navigateUp()
                 },
-                onSaveClick = {
+                onSaveSuccess = {
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Home.route) { inclusive = true }
                     }
@@ -211,3 +211,4 @@ fun NutrisiKuApp(
         }
     }
 }
+

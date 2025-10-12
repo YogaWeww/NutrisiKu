@@ -2,31 +2,28 @@ package com.example.nutrisiku.ui.screen
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items // <-- PASTIKAN IMPORT INI ADA
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.example.nutrisiku.R
+import com.example.nutrisiku.data.HistoryFoodItem
 import com.example.nutrisiku.ui.navigation.Screen
 import com.example.nutrisiku.ui.screen.components.NutrisiKuBottomNavBar
 import com.example.nutrisiku.ui.viewmodel.HistoryDetailViewModel
 import java.io.File
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,12 +44,16 @@ fun HistoryDetailScreen(
             onDismissRequest = { showDeleteDialog = false },
             title = { Text("Konfirmasi Hapus") },
             text = { Text("Apakah Anda yakin ingin menghapus riwayat ini? Tindakan ini tidak dapat dibatalkan.") },
+            // --- PERUBAHAN DI SINI ---
+            containerColor = MaterialTheme.colorScheme.surface,
             confirmButton = {
                 TextButton(
                     onClick = {
                         onDeleteClick()
                         showDeleteDialog = false
-                    }
+                    },
+                    // --- DAN DI SINI ---
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.secondary)
                 ) {
                     Text("Hapus")
                 }
@@ -86,7 +87,6 @@ fun HistoryDetailScreen(
         },
         floatingActionButton = {
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                // PERUBAHAN: Urutan tombol dibalik
                 ExtendedFloatingActionButton(
                     text = { Text("Edit") },
                     icon = { Icon(Icons.Default.Edit, contentDescription = "Edit") },
@@ -95,7 +95,7 @@ fun HistoryDetailScreen(
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )
                 FloatingActionButton(
-                    onClick = { showDeleteDialog = true }, // PERUBAHAN: Tampilkan dialog
+                    onClick = { showDeleteDialog = true },
                     containerColor = MaterialTheme.colorScheme.secondary,
                     contentColor = MaterialTheme.colorScheme.onSecondary
                 ) {
@@ -124,7 +124,7 @@ fun HistoryDetailScreen(
             ) {
                 item {
                     AsyncImage(
-                        model = File(detail.imagePath),
+                        model = if (detail.imagePath.isNotEmpty()) File(detail.imagePath) else R.drawable.logo_nutrisiku,
                         contentDescription = "Detail Makanan",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
@@ -135,10 +135,7 @@ fun HistoryDetailScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                 }
                 items(detail.foodItems) { foodItem ->
-                    ReadOnlyHistoryItem(
-                        name = "${foodItem.name} (${foodItem.portion}g)",
-                        calorie = "${foodItem.calories} KKAL"
-                    )
+                    ReadOnlyHistoryItem(foodItem = foodItem)
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 8.dp),
                         thickness = DividerDefaults.Thickness,
@@ -155,7 +152,6 @@ fun HistoryDetailScreen(
                         Text("Total Kalori:", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                         Text("${detail.totalCalories} KKAL", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     }
-                    // Spacer agar tidak tertutup FAB
                     Spacer(modifier = Modifier.height(80.dp))
                 }
             }
@@ -164,7 +160,7 @@ fun HistoryDetailScreen(
 }
 
 @Composable
-fun ReadOnlyHistoryItem(name: String, calorie: String) {
+fun ReadOnlyHistoryItem(foodItem: HistoryFoodItem) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -172,8 +168,18 @@ fun ReadOnlyHistoryItem(name: String, calorie: String) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(name, style = MaterialTheme.typography.bodyLarge)
-            Text(calorie, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+            val displayName = if (foodItem.quantity > 1) {
+                "${foodItem.name} x${foodItem.quantity}"
+            } else {
+                foodItem.name
+            }
+            Text(displayName, style = MaterialTheme.typography.bodyLarge)
+
+            val portionText = "(${foodItem.portion}g per item)"
+            Text(portionText, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
         }
+        val totalCalorieText = "${foodItem.calories * foodItem.quantity} KKAL"
+        Text(totalCalorieText, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
     }
 }
+
