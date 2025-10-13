@@ -4,36 +4,22 @@ import android.app.Application
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.nutrisiku.ui.navigation.Screen
-import com.example.nutrisiku.ui.screen.DetectionResultScreen
-import com.example.nutrisiku.ui.screen.DetectionScreen
-import com.example.nutrisiku.ui.screen.EditHistoryScreen
-import com.example.nutrisiku.ui.screen.EditProfileScreen
-import com.example.nutrisiku.ui.screen.HistoryDetailScreen
-import com.example.nutrisiku.ui.screen.HistoryScreen
-import com.example.nutrisiku.ui.screen.HomeScreen
-import com.example.nutrisiku.ui.screen.ManualInputScreen
-import com.example.nutrisiku.ui.screen.OnboardingScreen
-import com.example.nutrisiku.ui.screen.ProfileInputScreen
-import com.example.nutrisiku.ui.screen.ProfileScreen
-import com.example.nutrisiku.ui.viewmodel.DetectionViewModel
-import com.example.nutrisiku.ui.viewmodel.HistoryDetailViewModel
-import com.example.nutrisiku.ui.viewmodel.HistoryViewModel
-import com.example.nutrisiku.ui.viewmodel.MainViewModel
-import com.example.nutrisiku.ui.viewmodel.ManualInputViewModel
-import com.example.nutrisiku.ui.viewmodel.ProfileViewModel
-import com.example.nutrisiku.ui.viewmodel.ViewModelFactory
+import com.example.nutrisiku.ui.screen.*
+import com.example.nutrisiku.ui.viewmodel.*
 
 @Composable
 fun NutrisiKuApp(
-    startDestination: String
+    startDestination: String,
+    navController: NavHostController = rememberNavController()
 ) {
-    val navController = rememberNavController()
     val application = LocalContext.current.applicationContext as Application
     val factory = ViewModelFactory(application)
 
@@ -42,6 +28,34 @@ fun NutrisiKuApp(
     val historyViewModel: HistoryViewModel = viewModel(factory = factory)
     val detectionViewModel: DetectionViewModel = viewModel(factory = factory)
     val manualInputViewModel: ManualInputViewModel = viewModel(factory = factory)
+
+    // --- PERBAIKAN NAVIGASI UTAMA ---
+    val navigateToHome = {
+        navController.navigate(Screen.Home.route) {
+            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+    val navigateToHistory = {
+        navController.navigate(Screen.History.route) {
+            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+    val navigateToProfile = {
+        navController.navigate(Screen.Profile.route) {
+            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+    val navigateToDetection = {
+        detectionViewModel.clearDetectionState()
+        navController.navigate(Screen.Detection.route)
+    }
+
 
     NavHost(
         navController = navController,
@@ -74,12 +88,13 @@ fun NutrisiKuApp(
             HomeScreen(
                 profileViewModel = profileViewModel,
                 historyViewModel = historyViewModel,
-                navigateToProfile = { navController.navigate(Screen.Profile.route) },
-                navigateToDetection = {
-                    detectionViewModel.clearDetectionState()
-                    navController.navigate(Screen.Detection.route)
-                },
-                navigateToHistory = { navController.navigate(Screen.History.route) }
+                navigateToProfile = navigateToProfile,
+                navigateToDetection = navigateToDetection,
+                navigateToHistory = navigateToHistory,
+                // PERBAIKAN: Tambahkan aksi navigasi ke detail
+                navigateToHistoryDetail = { historyId ->
+                    navController.navigate(Screen.HistoryDetail.createRoute(historyId))
+                }
             )
         }
 
@@ -89,12 +104,9 @@ fun NutrisiKuApp(
                 historyViewModel = historyViewModel,
                 onEditProfileClick = { navController.navigate(Screen.EditProfile.route) },
                 onBackClick = { navController.navigateUp() },
-                navigateToHome = { navController.navigate(Screen.Home.route) },
-                navigateToDetection = {
-                    detectionViewModel.clearDetectionState()
-                    navController.navigate(Screen.Detection.route)
-                },
-                navigateToHistory = { navController.navigate(Screen.History.route) }
+                navigateToHome = navigateToHome,
+                navigateToDetection = navigateToDetection,
+                navigateToHistory = navigateToHistory
             )
         }
 
@@ -106,12 +118,9 @@ fun NutrisiKuApp(
                     profileViewModel.saveUserData()
                     navController.navigateUp()
                 },
-                navigateToHome = { navController.navigate(Screen.Home.route) },
-                navigateToDetection = {
-                    detectionViewModel.clearDetectionState()
-                    navController.navigate(Screen.Detection.route)
-                },
-                navigateToHistory = { navController.navigate(Screen.History.route) }
+                navigateToHome = navigateToHome,
+                navigateToDetection = navigateToDetection,
+                navigateToHistory = navigateToHistory
             )
         }
 
@@ -122,11 +131,8 @@ fun NutrisiKuApp(
                 onHistoryItemClick = { historyId ->
                     navController.navigate(Screen.HistoryDetail.createRoute(historyId))
                 },
-                navigateToHome = { navController.navigate(Screen.Home.route) },
-                navigateToDetection = {
-                    detectionViewModel.clearDetectionState()
-                    navController.navigate(Screen.Detection.route)
-                }
+                navigateToHome = navigateToHome,
+                navigateToDetection = navigateToDetection
             )
         }
 
@@ -145,12 +151,9 @@ fun NutrisiKuApp(
                 onEditClick = { historyId ->
                     navController.navigate(Screen.EditHistory.createRoute(historyId))
                 },
-                navigateToHome = { navController.navigate(Screen.Home.route) },
-                navigateToDetection = {
-                    detectionViewModel.clearDetectionState()
-                    navController.navigate(Screen.Detection.route)
-                },
-                navigateToHistory = { navController.navigate(Screen.History.route) }
+                navigateToHome = navigateToHome,
+                navigateToDetection = navigateToDetection,
+                navigateToHistory = navigateToHistory
             )
         }
 
@@ -163,10 +166,7 @@ fun NutrisiKuApp(
                 viewModel = viewModel,
                 onBackClick = { navController.navigateUp() },
                 onSaveClick = {
-                    // --- PERUBAHAN DI SINI ---
-                    // Panggil fungsi baru yang memiliki logika hapus-jika-kosong
                     viewModel.updateOrDeleteHistory()
-                    // Navigasi kembali ke halaman riwayat
                     navController.popBackStack(Screen.History.route, inclusive = false)
                 }
             )
@@ -188,7 +188,7 @@ fun NutrisiKuApp(
                 onSaveClick = {
                     detectionViewModel.saveDetectionToHistory()
                     navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.Home.route) { inclusive = true }
+                        popUpTo(navController.graph.findStartDestination().id)
                     }
                 }
             )
@@ -203,7 +203,7 @@ fun NutrisiKuApp(
                 },
                 onSaveSuccess = {
                     navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.Home.route) { inclusive = true }
+                        popUpTo(navController.graph.findStartDestination().id)
                     }
                     manualInputViewModel.clearState()
                 }

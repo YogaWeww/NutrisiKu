@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import com.example.nutrisiku.ui.screen.components.ImageResult
 import com.example.nutrisiku.ui.screen.components.PortionEditDialog
 import com.example.nutrisiku.ui.screen.components.QuantityEditor
+import com.example.nutrisiku.ui.screen.components.SessionDropdown
 import com.example.nutrisiku.ui.viewmodel.DetectedFoodItem
 import com.example.nutrisiku.ui.viewmodel.DetectionViewModel
 
@@ -30,10 +31,8 @@ fun DetectionResultScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // State untuk mengelola dialog edit porsi
     var editingPortionItem by remember { mutableStateOf<IndexedValue<DetectedFoodItem>?>(null) }
 
-    // Tampilkan dialog jika ada item yang sedang diedit
     editingPortionItem?.let { (index, item) ->
         PortionEditDialog(
             currentPortion = item.standardPortion,
@@ -83,7 +82,6 @@ fun DetectionResultScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Daftar Makanan dengan desain baru
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -103,7 +101,12 @@ fun DetectionResultScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Total Kalori
+            SessionDropdown(
+                selectedSession = uiState.sessionLabel,
+                onSessionSelected = viewModel::onSessionLabelChange
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -115,7 +118,6 @@ fun DetectionResultScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Tombol Simpan
             Button(
                 onClick = onSaveClick,
                 modifier = Modifier
@@ -147,7 +149,6 @@ fun FoodItemResultCard(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Bagian Kiri: Nama & Porsi
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = item.name,
@@ -161,29 +162,22 @@ fun FoodItemResultCard(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
-                    // --- PERUBAHAN: Mengganti teks dengan Ikon ---
-                    IconButton(
-                        onClick = onPortionChange,
-                        modifier = Modifier.size(24.dp) // Membuat target klik lebih kecil
-                    ) {
+                    IconButton(onClick = onPortionChange, modifier = Modifier.size(24.dp)) {
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = "Ubah Porsi",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp) // Ukuran ikon di dalam tombol
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
             }
 
-            // Bagian Tengah: Editor Kuantitas
             QuantityEditor(
                 quantity = item.quantity,
                 onDecrement = { onQuantityChange(item.quantity - 1) },
                 onIncrement = { onQuantityChange(item.quantity + 1) }
             )
 
-            // Bagian Kanan: Total Kalori per Item
             Text(
                 text = "${item.caloriesPerPortion * item.quantity} Kkal",
                 style = MaterialTheme.typography.titleMedium,
@@ -193,4 +187,6 @@ fun FoodItemResultCard(
         }
     }
 }
+
+// --- FUNGSI SessionDropdown DIHAPUS DARI SINI KARENA PINDAH KE SHAREDCOMPONENTS ---
 

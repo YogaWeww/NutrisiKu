@@ -2,7 +2,6 @@ package com.example.nutrisiku.ui.viewmodel
 
 import android.app.Application
 import android.graphics.Bitmap
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.nutrisiku.data.HistoryEntity
@@ -17,16 +16,23 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.util.Calendar
 
-data class ManualInputUiState(
+// Data class untuk satu item makanan dalam daftar input manual
+data class ManualFoodItem(
+    val id: Long = System.currentTimeMillis(), // ID unik untuk setiap item
     val foodName: String = "",
     val portion: String = "",
     val calories: String = "",
-    val quantity: Int = 1, // --- PERUBAHAN: Tambahkan kuantitas ---
+    val quantity: Int = 1
+)
+
+data class ManualInputUiState(
+    val foodItems: List<ManualFoodItem> = listOf(ManualFoodItem()), // Mulai dengan satu item kosong
     val selectedBitmap: Bitmap? = null,
     val errorMessage: String? = null,
-    val isSaveSuccess: Boolean = false
+    val isSaveSuccess: Boolean = false,
+    val sessionLabel: String = "Sarapan",
+    val isSaveButtonEnabled: Boolean = false
 )
 
 class ManualInputViewModel(
@@ -37,57 +43,82 @@ class ManualInputViewModel(
     private val _uiState = MutableStateFlow(ManualInputUiState())
     val uiState = _uiState.asStateFlow()
 
-    fun onFoodNameChange(name: String) { _uiState.update { it.copy(foodName = name) } }
-    fun onPortionChange(portion: String) { _uiState.update { it.copy(portion = portion) } }
-    fun onCaloriesChange(calories: String) { _uiState.update { it.copy(calories = calories) } }
-    fun onImageSelected(bitmap: Bitmap) { _uiState.update { it.copy(selectedBitmap = bitmap) } }
-
-    // --- PERUBAHAN: Fungsi untuk mengubah kuantitas ---
-    fun onQuantityChange(newQuantity: Int) {
-        if (newQuantity >= 1) {
-            _uiState.update { it.copy(quantity = newQuantity) }
+    // Fungsi untuk memperbarui properti dari item makanan tertentu
+    fun onFoodItemChange(index: Int, updatedItem: ManualFoodItem) {
+        _uiState.update { currentState ->
+            val updatedList = currentState.foodItems.toMutableList()
+            if (index in updatedList.indices) {
+                updatedList[index] = updatedItem
+            }
+            currentState.copy(foodItems = updatedList)
         }
+        validateState()
     }
 
-    fun clearState() {
-        _uiState.value = ManualInputUiState()
+    // Fungsi untuk menambah item makanan baru ke daftar
+    fun addFoodItem() {
+        _uiState.update { currentState ->
+            currentState.copy(foodItems = currentState.foodItems + ManualFoodItem())
+        }
+        validateState()
     }
 
-    fun errorMessageShown() {
-        _uiState.update { it.copy(errorMessage = null) }
+    // Fungsi untuk menghapus item makanan dari daftar
+    fun removeFoodItem(index: Int) {
+        _uiState.update { currentState ->
+            val updatedList = currentState.foodItems.toMutableList()
+            if (index in updatedList.indices) {
+                updatedList.removeAt(index)
+            }
+            // Jika daftar menjadi kosong, tambahkan satu item kosong kembali
+            if (updatedList.isEmpty()) {
+                updatedList.add(ManualFoodItem())
+            }
+            currentState.copy(foodItems = updatedList)
+        }
+        validateState()
     }
+
+    fun onImageSelected(bitmap: Bitmap) { _uiState.update { it.copy(selectedBitmap = bitmap) } }
+    fun onSessionLabelChange(newLabel: String) { _uiState.update { it.copy(sessionLabel = newLabel) } }
+    fun clearState() { _uiState.value = ManualInputUiState() }
+    fun errorMessageShown() { _uiState.update { it.copy(errorMessage = null) } }
 
     fun saveManualEntry() {
         viewModelScope.launch {
             val currentState = _uiState.value
 
-            if (currentState.foodName.isBlank() || currentState.calories.isBlank()) {
-                _uiState.update { it.copy(errorMessage = "Nama makanan dan kalori wajib diisi.") }
+            // Validasi: Pastikan tidak ada item yang kosong
+            val allItemsValid = currentState.foodItems.all {
+                it.foodName.isNotBlank() && it.portion.isNotBlank() && it.calories.isNotBlank()
+            }
+
+            if (!allItemsValid) {
+                _uiState.update { it.copy(errorMessage = "Semua kolom pada setiap makanan wajib diisi.") }
                 return@launch
             }
 
             val imagePath = if (currentState.selectedBitmap != null) {
                 saveBitmapToInternalStorage(currentState.selectedBitmap)
-            } else {
-                ""
+            } else { "" }
+
+            val historyFoodItems = currentState.foodItems.map {
+                HistoryFoodItem(
+                    name = it.foodName,
+                    portion = it.portion.toIntOrNull() ?: 0,
+                    calories = it.calories.toIntOrNull() ?: 0,
+                    quantity = it.quantity
+                )
             }
 
-            val caloriesPerItem = currentState.calories.toIntOrNull() ?: 0
-            val totalCalories = caloriesPerItem * currentState.quantity
-
-            val historyFoodItem = HistoryFoodItem(
-                name = currentState.foodName,
-                portion = currentState.portion.toIntOrNull() ?: 0,
-                calories = caloriesPerItem,
-                quantity = currentState.quantity // --- PERUBAHAN: Simpan kuantitas ---
-            )
+            val totalCalories = historyFoodItems.sumOf { it.calories * it.quantity }
 
             val historyEntity = HistoryEntity(
                 timestamp = System.currentTimeMillis(),
-                sessionLabel = getSessionLabel(),
+                sessionLabel = currentState.sessionLabel,
                 imagePath = imagePath ?: "",
-                totalCalories = totalCalories, // --- PERUBAHAN: Gunakan total kalori ---
-                foodItems = listOf(historyFoodItem)
+                totalCalories = totalCalories,
+                foodItems = historyFoodItems
             )
 
             historyRepository.insert(historyEntity)
@@ -111,13 +142,13 @@ class ManualInputViewModel(
         }
     }
 
-    private fun getSessionLabel(): String {
-        val calendar = Calendar.getInstance()
-        return when (calendar.get(Calendar.HOUR_OF_DAY)) {
-            in 6..10 -> "Sarapan"
-            in 11..15 -> "Makan Siang"
-            in 18..21 -> "Makan Malam"
-            else -> "Camilan"
+    private fun validateState() {
+        _uiState.update { currentState ->
+            val allItemsValid = currentState.foodItems.all {
+                it.foodName.isNotBlank() && it.portion.isNotBlank() && it.calories.isNotBlank()
+            }
+            currentState.copy(isSaveButtonEnabled = allItemsValid)
         }
     }
 }
+

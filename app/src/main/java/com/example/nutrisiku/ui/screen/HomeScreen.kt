@@ -2,35 +2,16 @@ package com.example.nutrisiku.ui.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
-import androidx.compose.material.icons.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -43,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.nutrisiku.R
+import com.example.nutrisiku.data.HistoryEntity
 import com.example.nutrisiku.ui.navigation.Screen
 import com.example.nutrisiku.ui.screen.components.CalorieCard
 import com.example.nutrisiku.ui.screen.components.HistoryEntryCard
@@ -50,6 +32,8 @@ import com.example.nutrisiku.ui.screen.components.NutrisiKuBottomNavBar
 import com.example.nutrisiku.ui.viewmodel.HistoryViewModel
 import com.example.nutrisiku.ui.viewmodel.ProfileViewModel
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
 
 @Composable
 fun HomeScreen(
@@ -57,9 +41,10 @@ fun HomeScreen(
     historyViewModel: HistoryViewModel,
     navigateToProfile: () -> Unit,
     navigateToDetection: () -> Unit,
-    navigateToHistory: () -> Unit
+    navigateToHistory: () -> Unit,
+    // PERBAIKAN: Tambahkan parameter navigasi ke detail
+    navigateToHistoryDetail: (Int) -> Unit
 ) {
-    // Ambil UI state dari ViewModel
     val profileState by profileViewModel.uiState.collectAsState()
     val historyList by historyViewModel.historyList.collectAsState()
     val todaysCalories by historyViewModel.todaysCalories.collectAsState() // Ambil kalori hari ini
@@ -68,7 +53,6 @@ fun HomeScreen(
     Scaffold(
         bottomBar = {
             NutrisiKuBottomNavBar(
-                // PERBAIKAN: Beri tahu BottomNavBar bahwa rute saat ini adalah "home"
                 currentRoute = Screen.Home.route,
                 onHomeClick = { /* Kita sudah di Home, tidak perlu aksi */ },
                 onDetectionClick = navigateToDetection,
@@ -85,7 +69,6 @@ fun HomeScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             Spacer(modifier = Modifier.height(16.dp))
-            // Tampilkan nama pengguna dari ViewModel
             HeaderSection(
                 name = profileState.name,
                 imagePath = profileState.imagePath,
@@ -94,18 +77,20 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(24.dp))
             DateCard()
             Spacer(modifier = Modifier.height(16.dp))
-            // Di dalam HomeScreen.kt
             CalorieCard(
                 consumed = todaysCalories,
                 total = profileState.tdee
             )
-
             Spacer(modifier = Modifier.height(16.dp))
             DetectNowButton(onClick = navigateToDetection)
             Spacer(modifier = Modifier.height(24.dp))
             HistorySection(
-                latestHistory = latestHistory, // Teruskan data riwayat terbaru
-                onSeeAllClick = navigateToHistory
+                latestHistory = latestHistory,
+                onSeeAllClick = navigateToHistory,
+                // PERBAIKAN: Teruskan aksi klik ke detail
+                onHistoryItemClick = {
+                    latestHistory?.id?.let { navigateToHistoryDetail(it) }
+                }
             )
         }
     }
@@ -114,7 +99,7 @@ fun HomeScreen(
 @Composable
 fun HeaderSection(
     name: String,
-    imagePath: String, // Terima path gambar
+    imagePath: String,
     onProfileClick: () -> Unit
 ) {
     Row(
@@ -123,7 +108,7 @@ fun HeaderSection(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = if (name.isNotEmpty()) "Halo $name" else "Halo User",
+            text = if (name.isNotEmpty()) "Halo, $name" else "Halo!",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
@@ -143,6 +128,8 @@ fun HeaderSection(
 
 @Composable
 fun DateCard() {
+    // PERBAIKAN: Gunakan tanggal dinamis
+    val todayDate = SimpleDateFormat("EEEE, dd MMMM yyyy", Locale("id", "ID")).format(Date())
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -160,7 +147,7 @@ fun DateCard() {
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Minggu, 08 Juli 2025",
+                text = todayDate,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -200,30 +187,30 @@ fun DetectNowButton(onClick: () -> Unit) {
         )
     }
 }
-// ... (Sisa Composable lain di HomeScreen seperti HeaderSection, CalorieCard, dll. tetap sama)
-// Pastikan HistorySection dimodifikasi untuk menerima onSeeAllClick
+
 @Composable
 fun HistorySection(
-    latestHistory: com.example.nutrisiku.data.HistoryEntity?, // Terima data riwayat
-    onSeeAllClick: () -> Unit
+    latestHistory: HistoryEntity?,
+    onSeeAllClick: () -> Unit,
+    onHistoryItemClick: () -> Unit // PERBAIKAN: Tambahkan parameter baru
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = "Riwayat Deteksi:",
+            text = "Riwayat Deteksi Terakhir:",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(12.dp))
         if (latestHistory != null) {
+            // PERBAIKAN: Gunakan aksi onHistoryItemClick
             HistoryEntryCard(
                 imagePath = latestHistory.imagePath,
                 session = latestHistory.sessionLabel,
                 totalCalorie = latestHistory.totalCalories,
-                onClick = onSeeAllClick
+                onClick = onHistoryItemClick
             )
         } else {
-            // Tampilan jika riwayat masih kosong
-            Text("Belum ada riwayat deteksi.")
+            Text("Belum ada riwayat deteksi.", modifier = Modifier.align(Alignment.CenterHorizontally))
         }
         Spacer(modifier = Modifier.height(12.dp))
         OutlinedButton(
@@ -234,10 +221,11 @@ fun HistorySection(
                 .height(56.dp)
         ) {
             Text(
-                text = "Lihat Semua",
+                text = "Lihat Semua Riwayat",
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
             )
         }
     }
 }
+

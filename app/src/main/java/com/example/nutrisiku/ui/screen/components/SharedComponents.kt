@@ -9,7 +9,6 @@ import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -51,6 +50,8 @@ import java.io.File
 import java.util.concurrent.Executors
 import kotlin.math.min
 
+// ... (Kode lainnya tetap sama) ...
+// --- KODE LAMA ANDA DI SINI ---
 @Composable
 fun NutrisiKuBottomNavBar(
     currentRoute: String?,
@@ -141,9 +142,7 @@ fun HistoryEntryCard(
                 modifier = Modifier
                     .size(56.dp)
                     .clip(RoundedCornerShape(12.dp)),
-                contentScale = ContentScale.Crop,
-                placeholder = painterResource(id = R.drawable.logo_nutrisiku),
-                error = painterResource(id = R.drawable.logo_nutrisiku)
+                contentScale = ContentScale.Crop
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -512,7 +511,7 @@ fun DetectionResultCard(
 @Composable
 fun RealtimeDetectionResultItem(
     item: DetectedFoodItem,
-    onLockToggle: () -> Unit,
+    onLockToggle: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -635,5 +634,53 @@ fun PortionEditDialog(
         },
         containerColor = MaterialTheme.colorScheme.surface
     )
+}
+
+// PERUBAHAN: Composable untuk SessionDropdown
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SessionDropdown(
+    selectedSession: String,
+    onSessionSelected: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var isExpanded by remember { mutableStateOf(false) }
+    val sessionOptions = listOf("Sarapan", "Makan Siang", "Makan Malam", "Camilan")
+
+    ExposedDropdownMenuBox(
+        expanded = isExpanded,
+        onExpandedChange = { isExpanded = it },
+        modifier = modifier
+    ) {
+        OutlinedTextField(
+            value = selectedSession,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Simpan Sebagai") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(),
+            shape = RoundedCornerShape(12.dp)
+        )
+        ExposedDropdownMenu(
+            expanded = isExpanded,
+            onDismissRequest = { isExpanded = false },
+            modifier = Modifier.background(MaterialTheme.colorScheme.surface) // Warna background menu
+        ) {
+            sessionOptions.forEach { session ->
+                DropdownMenuItem(
+                    text = { Text(session) },
+                    onClick = {
+                        onSessionSelected(session)
+                        isExpanded = false
+                    },
+                    colors = MenuDefaults.itemColors(
+                        textColor = MaterialTheme.colorScheme.onSurface // Warna teks item menu
+                    )
+                )
+            }
+        }
+    }
 }
 
