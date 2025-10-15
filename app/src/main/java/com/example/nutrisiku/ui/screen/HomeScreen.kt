@@ -12,9 +12,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,19 +40,19 @@ fun HomeScreen(
     navigateToProfile: () -> Unit,
     navigateToDetection: () -> Unit,
     navigateToHistory: () -> Unit,
-    // PERBAIKAN: Tambahkan parameter navigasi ke detail
+    // --- PERUBAHAN: Tambahkan parameter baru ---
     navigateToHistoryDetail: (Int) -> Unit
 ) {
     val profileState by profileViewModel.uiState.collectAsState()
     val historyList by historyViewModel.historyList.collectAsState()
-    val todaysCalories by historyViewModel.todaysCalories.collectAsState() // Ambil kalori hari ini
+    val todaysCalories by historyViewModel.todaysCalories.collectAsState()
     val latestHistory = historyList.firstOrNull()
 
     Scaffold(
         bottomBar = {
             NutrisiKuBottomNavBar(
                 currentRoute = Screen.Home.route,
-                onHomeClick = { /* Kita sudah di Home, tidak perlu aksi */ },
+                onHomeClick = { /* No action needed */ },
                 onDetectionClick = navigateToDetection,
                 onHistoryClick = navigateToHistory
             )
@@ -86,9 +84,9 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(24.dp))
             HistorySection(
                 latestHistory = latestHistory,
+                // --- PERUBAHAN: Teruskan kedua aksi navigasi ---
                 onSeeAllClick = navigateToHistory,
-                // PERBAIKAN: Teruskan aksi klik ke detail
-                onHistoryItemClick = {
+                onLatestHistoryClick = {
                     latestHistory?.id?.let { navigateToHistoryDetail(it) }
                 }
             )
@@ -128,8 +126,9 @@ fun HeaderSection(
 
 @Composable
 fun DateCard() {
-    // PERBAIKAN: Gunakan tanggal dinamis
-    val todayDate = SimpleDateFormat("EEEE, dd MMMM yyyy", Locale("id", "ID")).format(Date())
+    val currentDate = remember {
+        SimpleDateFormat("EEEE, dd MMMM yyyy", Locale("id", "ID")).format(Date())
+    }
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -147,7 +146,7 @@ fun DateCard() {
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = todayDate,
+                text = currentDate,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -192,29 +191,30 @@ fun DetectNowButton(onClick: () -> Unit) {
 fun HistorySection(
     latestHistory: HistoryEntity?,
     onSeeAllClick: () -> Unit,
-    onHistoryItemClick: () -> Unit // PERBAIKAN: Tambahkan parameter baru
+    // --- PERUBAHAN: Tambahkan parameter baru ---
+    onLatestHistoryClick: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = "Riwayat Deteksi Terakhir:",
+            text = "Riwayat Deteksi:",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(12.dp))
         if (latestHistory != null) {
-            // PERBAIKAN: Gunakan aksi onHistoryItemClick
+            // --- PERUBAHAN: Gunakan aksi klik yang baru ---
             HistoryEntryCard(
                 imagePath = latestHistory.imagePath,
                 session = latestHistory.sessionLabel,
                 totalCalorie = latestHistory.totalCalories,
-                onClick = onHistoryItemClick
+                onClick = onLatestHistoryClick // Arahkan ke detail
             )
         } else {
-            Text("Belum ada riwayat deteksi.", modifier = Modifier.align(Alignment.CenterHorizontally))
+            Text("Belum ada riwayat deteksi.")
         }
         Spacer(modifier = Modifier.height(12.dp))
         OutlinedButton(
-            onClick = onSeeAllClick,
+            onClick = onSeeAllClick, // Aksi ini tetap mengarah ke daftar riwayat
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier
                 .fillMaxWidth()

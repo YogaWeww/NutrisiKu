@@ -5,10 +5,9 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
-import com.example.nutrisiku.data.FoodNutrition
 import com.example.nutrisiku.data.HistoryEntity
-import com.example.nutrisiku.data.HistoryFoodItem
 import com.example.nutrisiku.data.HistoryRepository
+import com.example.nutrisiku.data.FoodNutrition
 import com.example.nutrisiku.data.NutritionRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -76,8 +75,24 @@ class HistoryDetailViewModel(
         }
     }
 
+    fun onCaloriesChange(itemIndex: Int, newCaloriesString: String) {
+        _historyDetail.update { currentDetail ->
+            currentDetail?.let {
+                val updatedItems = it.foodItems.toMutableList()
+                if (itemIndex in updatedItems.indices) {
+                    val oldItem = updatedItems[itemIndex]
+                    val newCalories = newCaloriesString.toIntOrNull() ?: 0
+                    updatedItems[itemIndex] = oldItem.copy(calories = newCalories)
+                }
+                val newTotalCalories = updatedItems.sumOf { item -> item.calories * item.quantity }
+                it.copy(foodItems = updatedItems, totalCalories = newTotalCalories)
+            }
+        }
+    }
+
+
     fun onQuantityChange(itemIndex: Int, newQuantity: Int) {
-        if (newQuantity <= 0) return // Kuantitas tidak boleh kurang dari 1
+        if (newQuantity <= 0) return
 
         _historyDetail.update { currentDetail ->
             currentDetail?.let {
@@ -105,19 +120,24 @@ class HistoryDetailViewModel(
         }
     }
 
-    // --- PERUBAHAN LOGIKA UTAMA DI SINI ---
-    fun updateOrDeleteHistory() {
+    fun onSessionLabelChange(newLabel: String) {
+        _historyDetail.update { currentDetail ->
+            currentDetail?.copy(sessionLabel = newLabel)
+        }
+    }
+
+    // --- PERUBAHAN: Fungsi ini sekarang menggunakan callback ---
+    fun updateOrDeleteHistory(onComplete: (wasDeleted: Boolean) -> Unit) {
         viewModelScope.launch {
             _historyDetail.value?.let { detail ->
-                // Jika setelah diedit daftar makanannya kosong
                 if (detail.foodItems.isEmpty()) {
-                    // Hapus seluruh entri riwayat
                     historyRepository.delete(detail)
                     Log.d("HistoryDetailVM", "History item deleted because it was empty.")
+                    onComplete(true) // Memberi tahu bahwa item telah dihapus
                 } else {
-                    // Jika masih ada item, update seperti biasa
                     historyRepository.update(detail)
                     Log.d("HistoryDetailVM", "History item updated.")
+                    onComplete(false) // Memberi tahu bahwa item hanya di-update
                 }
             }
         }

@@ -9,12 +9,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -22,6 +17,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.nutrisiku.data.HistoryFoodItem
 import com.example.nutrisiku.ui.screen.components.QuantityEditor
+import com.example.nutrisiku.ui.screen.components.SessionDropdown
 import com.example.nutrisiku.ui.viewmodel.HistoryDetailViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -55,7 +51,6 @@ fun EditHistoryScreen(
                     Text("Batal")
                 }
             },
-            // --- PERUBAHAN DI SINI ---
             containerColor = MaterialTheme.colorScheme.surface
         )
     }
@@ -93,11 +88,22 @@ fun EditHistoryScreen(
                     .padding(innerPadding),
                 contentPadding = PaddingValues(16.dp)
             ) {
+                item {
+                    SessionDropdown(
+                        selectedSession = detail.sessionLabel,
+                        onSessionSelected = { newLabel -> viewModel.onSessionLabelChange(newLabel) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
                 itemsIndexed(detail.foodItems) { index, foodItem ->
                     EditableHistoryItem(
                         item = foodItem,
                         onNameChange = { newName -> viewModel.onNameChange(index, newName) },
                         onPortionChange = { newPortion -> viewModel.onPortionChange(index, newPortion) },
+                        // --- PERUBAHAN: Tambahkan callback untuk kalori ---
+                        onCaloriesChange = { newCalories -> viewModel.onCaloriesChange(index, newCalories) },
                         onQuantityChange = { newQuantity -> viewModel.onQuantityChange(index, newQuantity) },
                         onDeleteItem = { itemIndexToDelete = index }
                     )
@@ -113,6 +119,7 @@ fun EditableHistoryItem(
     item: HistoryFoodItem,
     onNameChange: (String) -> Unit,
     onPortionChange: (String) -> Unit,
+    onCaloriesChange: (String) -> Unit, // --- PERUBAHAN: Parameter baru ---
     onQuantityChange: (Int) -> Unit,
     onDeleteItem: () -> Unit
 ) {
@@ -156,6 +163,14 @@ fun EditableHistoryItem(
                 onIncrement = { onQuantityChange(item.quantity + 1) }
             )
         }
+        // --- PERUBAHAN: Tambahkan field untuk mengedit kalori ---
+        OutlinedTextField(
+            value = if (item.calories > 0) item.calories.toString() else "",
+            onValueChange = onCaloriesChange,
+            label = { Text("Kalori per Porsi") },
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+        )
     }
 }
 

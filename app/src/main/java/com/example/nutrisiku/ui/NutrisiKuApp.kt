@@ -18,18 +18,21 @@ import com.example.nutrisiku.ui.viewmodel.*
 @Composable
 fun NutrisiKuApp(
     startDestination: String,
+    // PERUBAHAN: Jadikan NavController sebagai parameter dengan nilai default
     navController: NavHostController = rememberNavController()
 ) {
     val application = LocalContext.current.applicationContext as Application
     val factory = ViewModelFactory(application)
 
+    // Inisialisasi ViewModel tetap sama
     val mainViewModel: MainViewModel = viewModel(factory = factory)
     val profileViewModel: ProfileViewModel = viewModel(factory = factory)
     val historyViewModel: HistoryViewModel = viewModel(factory = factory)
     val detectionViewModel: DetectionViewModel = viewModel(factory = factory)
     val manualInputViewModel: ManualInputViewModel = viewModel(factory = factory)
 
-    // --- PERBAIKAN NAVIGASI UTAMA ---
+    // --- PERBAIKAN LOGIKA NAVIGASI UTAMA ---
+    // Buat aksi navigasi yang bisa digunakan kembali untuk tujuan level atas
     val navigateToHome = {
         navController.navigate(Screen.Home.route) {
             popUpTo(navController.graph.findStartDestination().id) { saveState = true }
@@ -51,16 +54,17 @@ fun NutrisiKuApp(
             restoreState = true
         }
     }
+    // Aksi navigasi lainnya tetap sama
     val navigateToDetection = {
         detectionViewModel.clearDetectionState()
         navController.navigate(Screen.Detection.route)
     }
 
-
     NavHost(
         navController = navController,
         startDestination = startDestination,
     ) {
+        // Rute Onboarding dan ProfileInput tetap sama
         composable(Screen.Onboarding.route) {
             OnboardingScreen(
                 onFinishClick = {
@@ -71,7 +75,6 @@ fun NutrisiKuApp(
                 }
             )
         }
-
         composable(Screen.ProfileInput.route) {
             ProfileInputScreen(
                 viewModel = profileViewModel,
@@ -84,14 +87,15 @@ fun NutrisiKuApp(
             )
         }
 
+        // --- PERUBAHAN PADA LAYAR UTAMA ---
         composable(Screen.Home.route) {
             HomeScreen(
                 profileViewModel = profileViewModel,
                 historyViewModel = historyViewModel,
-                navigateToProfile = navigateToProfile,
+                navigateToProfile = navigateToProfile, // Gunakan aksi navigasi yang benar
                 navigateToDetection = navigateToDetection,
-                navigateToHistory = navigateToHistory,
-                // PERBAIKAN: Tambahkan aksi navigasi ke detail
+                navigateToHistory = navigateToHistory, // Gunakan aksi navigasi yang benar
+                // Tambahkan aksi untuk navigasi ke detail
                 navigateToHistoryDetail = { historyId ->
                     navController.navigate(Screen.HistoryDetail.createRoute(historyId))
                 }
@@ -104,12 +108,25 @@ fun NutrisiKuApp(
                 historyViewModel = historyViewModel,
                 onEditProfileClick = { navController.navigate(Screen.EditProfile.route) },
                 onBackClick = { navController.navigateUp() },
-                navigateToHome = navigateToHome,
+                navigateToHome = navigateToHome, // Gunakan aksi navigasi yang benar
                 navigateToDetection = navigateToDetection,
-                navigateToHistory = navigateToHistory
+                navigateToHistory = navigateToHistory // Gunakan aksi navigasi yang benar
             )
         }
 
+        composable(Screen.History.route) {
+            HistoryScreen(
+                viewModel = historyViewModel,
+                onBackClick = { navController.navigateUp() },
+                onHistoryItemClick = { historyId ->
+                    navController.navigate(Screen.HistoryDetail.createRoute(historyId))
+                },
+                navigateToHome = navigateToHome, // Gunakan aksi navigasi yang benar
+                navigateToDetection = navigateToDetection
+            )
+        }
+
+        // Rute lainnya disesuaikan untuk menggunakan aksi navigasi yang benar
         composable(Screen.EditProfile.route) {
             EditProfileScreen(
                 viewModel = profileViewModel,
@@ -121,18 +138,6 @@ fun NutrisiKuApp(
                 navigateToHome = navigateToHome,
                 navigateToDetection = navigateToDetection,
                 navigateToHistory = navigateToHistory
-            )
-        }
-
-        composable(Screen.History.route) {
-            HistoryScreen(
-                viewModel = historyViewModel,
-                onBackClick = { navController.navigateUp() },
-                onHistoryItemClick = { historyId ->
-                    navController.navigate(Screen.HistoryDetail.createRoute(historyId))
-                },
-                navigateToHome = navigateToHome,
-                navigateToDetection = navigateToDetection
             )
         }
 
@@ -166,12 +171,18 @@ fun NutrisiKuApp(
                 viewModel = viewModel,
                 onBackClick = { navController.navigateUp() },
                 onSaveClick = {
-                    viewModel.updateOrDeleteHistory()
-                    navController.popBackStack(Screen.History.route, inclusive = false)
+                    viewModel.updateOrDeleteHistory { wasDeleted ->
+                        if (wasDeleted) {
+                            navController.popBackStack(Screen.History.route, inclusive = false)
+                        } else {
+                            navController.navigateUp()
+                        }
+                    }
                 }
             )
         }
 
+        // Rute deteksi dan manual input tetap sama
         composable(Screen.Detection.route) {
             DetectionScreen(
                 viewModel = detectionViewModel,
@@ -187,6 +198,7 @@ fun NutrisiKuApp(
                 onBackClick = { navController.navigateUp() },
                 onSaveClick = {
                     detectionViewModel.saveDetectionToHistory()
+                    // Perbaiki navigasi setelah menyimpan
                     navController.navigate(Screen.Home.route) {
                         popUpTo(navController.graph.findStartDestination().id)
                     }
@@ -202,6 +214,7 @@ fun NutrisiKuApp(
                     navController.navigateUp()
                 },
                 onSaveSuccess = {
+                    // Perbaiki navigasi setelah menyimpan
                     navController.navigate(Screen.Home.route) {
                         popUpTo(navController.graph.findStartDestination().id)
                     }
