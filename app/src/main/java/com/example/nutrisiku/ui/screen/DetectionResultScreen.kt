@@ -1,27 +1,55 @@
 package com.example.nutrisiku.ui.screen
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.nutrisiku.R
+import com.example.nutrisiku.ui.screen.components.FoodItemResultCard
 import com.example.nutrisiku.ui.screen.components.ImageResult
 import com.example.nutrisiku.ui.screen.components.PortionEditDialog
-import com.example.nutrisiku.ui.screen.components.QuantityEditor
 import com.example.nutrisiku.ui.screen.components.SessionDropdown
 import com.example.nutrisiku.ui.viewmodel.DetectedFoodItem
 import com.example.nutrisiku.ui.viewmodel.DetectionViewModel
 
+/**
+ * Layar untuk menampilkan hasil deteksi makanan dari sebuah gambar.
+ * Pengguna dapat meninjau, mengedit kuantitas/porsi, dan menyimpan hasilnya.
+ *
+ * @param viewModel ViewModel yang menyediakan state dan logika untuk layar ini.
+ * @param onBackClick Aksi yang dipanggil saat tombol kembali ditekan.
+ * @param onSaveClick Aksi yang dipanggil saat tombol simpan ditekan.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetectionResultScreen(
@@ -31,6 +59,7 @@ fun DetectionResultScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    // State untuk mengelola dialog edit porsi
     var editingPortionItem by remember { mutableStateOf<IndexedValue<DetectedFoodItem>?>(null) }
 
     editingPortionItem?.let { (index, item) ->
@@ -47,10 +76,10 @@ fun DetectionResultScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Hasil Deteksi", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.detection_result_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Kembali")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.content_desc_back))
                     }
                 }
             )
@@ -62,6 +91,7 @@ fun DetectionResultScreen(
                 .padding(innerPadding)
                 .padding(16.dp)
         ) {
+            // Menampilkan gambar hasil deteksi
             uiState.selectedBitmap?.let { bitmap ->
                 ImageResult(
                     bitmap = bitmap,
@@ -76,12 +106,13 @@ fun DetectionResultScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                "Rincian Makanan:",
+                stringResource(R.string.food_details_label),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Daftar item makanan yang terdeteksi
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -90,7 +121,7 @@ fun DetectionResultScreen(
                     FoodItemResultCard(
                         item = item,
                         onQuantityChange = { newQuantity ->
-                            viewModel.updateItemQuantity(item, newQuantity, isFromResultScreen = true)
+                            viewModel.updateItemQuantity(item, newQuantity)
                         },
                         onPortionChange = {
                             editingPortionItem = IndexedValue(index, item)
@@ -101,23 +132,31 @@ fun DetectionResultScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Dropdown untuk memilih sesi makan
             SessionDropdown(
                 selectedSession = uiState.sessionLabel,
                 onSessionSelected = viewModel::onSessionLabelChange
             )
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Tampilan total kalori
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Total Kalori:", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                Text("${uiState.totalCalories} KKAL", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Text(stringResource(R.string.total_calories_label), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(
+                    stringResource(R.string.kcal_value, uiState.totalCalories),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Tombol simpan
             Button(
                 onClick = onSaveClick,
                 modifier = Modifier
@@ -125,68 +164,9 @@ fun DetectionResultScreen(
                     .height(56.dp),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Simpan", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.button_save), fontWeight = FontWeight.Bold)
             }
         }
     }
 }
-
-@Composable
-fun FoodItemResultCard(
-    item: DetectedFoodItem,
-    onQuantityChange: (Int) -> Unit,
-    onPortionChange: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = item.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "Porsi: ${item.standardPortion}g",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                    )
-                    IconButton(onClick = onPortionChange, modifier = Modifier.size(24.dp)) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Ubah Porsi",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-            }
-
-            QuantityEditor(
-                quantity = item.quantity,
-                onDecrement = { onQuantityChange(item.quantity - 1) },
-                onIncrement = { onQuantityChange(item.quantity + 1) }
-            )
-
-            Text(
-                text = "${item.caloriesPerPortion * item.quantity} Kkal",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(start = 16.dp)
-            )
-        }
-    }
-}
-
-// --- FUNGSI SessionDropdown DIHAPUS DARI SINI KARENA PINDAH KE SHAREDCOMPONENTS ---
 

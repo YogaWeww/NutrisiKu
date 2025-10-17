@@ -14,6 +14,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+/**
+ * ViewModel untuk layar Detail Riwayat dan Edit Riwayat.
+ * Mengelola state untuk satu entri riwayat, menangani pembaruan, dan penghapusan.
+ *
+ * @param application Konteks aplikasi.
+ * @param savedStateHandle Menangani state yang tersimpan dan argumen navigasi (seperti historyId).
+ * @param historyRepository Repository untuk berinteraksi dengan data riwayat di database.
+ * @param nutritionRepository Repository untuk mendapatkan data nutrisi makanan.
+ */
 class HistoryDetailViewModel(
     application: Application,
     private val savedStateHandle: SavedStateHandle,
@@ -21,14 +30,23 @@ class HistoryDetailViewModel(
     private val nutritionRepository: NutritionRepository
 ) : AndroidViewModel(application) {
 
+    // Mendapatkan ID riwayat dari argumen navigasi.
     private val historyId: Int = savedStateHandle.get<Int>("historyId") ?: -1
 
     private val _historyDetail = MutableStateFlow<HistoryEntity?>(null)
     val historyDetail = _historyDetail.asStateFlow()
 
+    // PERBAIKAN: Mengakses properti, bukan memanggil fungsi.
     private val nutritionData: Map<String, FoodNutrition> by lazy {
-        nutritionRepository.getNutritionData()
+        nutritionRepository.nutritionData
     }
+
+    // PENINGKATAN: Buat map kedua yang dioptimalkan untuk pencarian berdasarkan nama tampilan.
+    // Ini jauh lebih efisien daripada menggunakan .find() pada list setiap saat.
+    private val nutritionDataByName: Map<String, FoodNutrition> by lazy {
+        nutritionData.values.associateBy { it.nama_tampilan }
+    }
+
 
     init {
         if (historyId != -1) {
@@ -58,7 +76,8 @@ class HistoryDetailViewModel(
                     val oldItem = updatedItems[itemIndex]
                     val newPortion = newPortionString.toIntOrNull() ?: 0
 
-                    val foodInfo = nutritionData.values.find { food -> food.nama_tampilan == oldItem.name }
+                    // PENINGKATAN: Gunakan map yang efisien untuk lookup.
+                    val foodInfo = nutritionDataByName[oldItem.name]
 
                     val newCalories = foodInfo?.let { nutrition ->
                         (nutrition.kalori_per_100g / 100.0 * newPortion).toInt()
@@ -126,18 +145,17 @@ class HistoryDetailViewModel(
         }
     }
 
-    // --- PERUBAHAN: Fungsi ini sekarang menggunakan callback ---
     fun updateOrDeleteHistory(onComplete: (wasDeleted: Boolean) -> Unit) {
         viewModelScope.launch {
             _historyDetail.value?.let { detail ->
                 if (detail.foodItems.isEmpty()) {
                     historyRepository.delete(detail)
                     Log.d("HistoryDetailVM", "History item deleted because it was empty.")
-                    onComplete(true) // Memberi tahu bahwa item telah dihapus
+                    onComplete(true)
                 } else {
                     historyRepository.update(detail)
                     Log.d("HistoryDetailVM", "History item updated.")
-                    onComplete(false) // Memberi tahu bahwa item hanya di-update
+                    onComplete(false)
                 }
             }
         }
@@ -151,4 +169,3 @@ class HistoryDetailViewModel(
         }
     }
 }
-

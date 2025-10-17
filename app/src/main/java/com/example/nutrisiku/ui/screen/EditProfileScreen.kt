@@ -1,30 +1,15 @@
 package com.example.nutrisiku.ui.screen
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Cake
-import androidx.compose.material.icons.filled.Height
-import androidx.compose.material.icons.filled.MonitorWeight
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
@@ -32,24 +17,59 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.nutrisiku.R
+import com.example.nutrisiku.ui.navigation.Screen
 import com.example.nutrisiku.ui.screen.components.ActivityLevelDropdown
 import com.example.nutrisiku.ui.screen.components.GenderDropdown
+import com.example.nutrisiku.ui.screen.components.NutrisiKuBottomNavBar
 import com.example.nutrisiku.ui.viewmodel.ProfileViewModel
 
 /**
- * Layar untuk pengguna baru menginput data profil mereka untuk pertama kali.
+ * Layar untuk mengedit data profil pengguna yang sudah ada.
  *
  * @param viewModel ViewModel yang mengelola state dan logika untuk profil.
- * @param onConfirmClick Aksi yang dipanggil saat tombol konfirmasi diklik.
+ * @param onBackClick Aksi untuk kembali ke layar sebelumnya.
+ * @param onSaveClick Aksi yang dipanggil saat tombol simpan diklik.
+ * @param navigateToHome Aksi navigasi ke layar Home.
+ * @param navigateToDetection Aksi navigasi ke layar Deteksi.
+ * @param navigateToHistory Aksi navigasi ke layar Riwayat.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileInputScreen(
+fun EditProfileScreen(
     viewModel: ProfileViewModel,
-    onConfirmClick: () -> Unit
+    onBackClick: () -> Unit,
+    onSaveClick: () -> Unit,
+    navigateToHome: () -> Unit,
+    navigateToDetection: () -> Unit,
+    navigateToHistory: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    Scaffold { innerPadding ->
+    // Memuat data awal saat layar pertama kali ditampilkan
+    LaunchedEffect(Unit) {
+        viewModel.loadInitialData()
+    }
+
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text(stringResource(R.string.edit_profile_title), fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.content_desc_back))
+                    }
+                }
+            )
+        },
+        bottomBar = {
+            NutrisiKuBottomNavBar(
+                currentRoute = Screen.Profile.route, // Tetap menyorot ikon profil
+                onHomeClick = navigateToHome,
+                onDetectionClick = navigateToDetection,
+                onHistoryClick = navigateToHistory
+            )
+        }
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -58,21 +78,6 @@ fun ProfileInputScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Header
-            Text(
-                text = stringResource(R.string.profile_input_welcome_title),
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = stringResource(R.string.profile_input_welcome_subtitle),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-            )
-
-            // Catatan
             Text(
                 text = stringResource(R.string.profile_input_required_fields_note),
                 style = MaterialTheme.typography.bodySmall,
@@ -80,7 +85,6 @@ fun ProfileInputScreen(
                 color = MaterialTheme.colorScheme.primary
             )
 
-            // Form Input
             OutlinedTextField(
                 value = uiState.name,
                 onValueChange = viewModel::onNameChange,
@@ -125,25 +129,17 @@ fun ProfileInputScreen(
                 onActivitySelected = viewModel::onActivityLevelChange
             )
 
-            // Catatan tambahan
-            Text(
-                text = stringResource(R.string.profile_input_can_change_later_note),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
-            )
-
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Tombol Konfirmasi
             Button(
-                onClick = onConfirmClick,
+                onClick = onSaveClick,
                 enabled = uiState.isConfirmButtonEnabled,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text(stringResource(R.string.button_confirm), fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.button_save), fontWeight = FontWeight.Bold)
             }
         }
     }

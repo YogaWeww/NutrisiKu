@@ -1,20 +1,12 @@
 package com.example.nutrisiku.ui.screen.components
 
 import android.graphics.Bitmap
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.Preview
-import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.view.PreviewView
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DirectionsRun
 import androidx.compose.material.icons.filled.*
@@ -24,34 +16,29 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil.compose.AsyncImage
 import com.example.nutrisiku.R
 import com.example.nutrisiku.data.DetectionResult
 import com.example.nutrisiku.ui.navigation.Screen
-import com.example.nutrisiku.ui.viewmodel.DetectedFoodItem
-import com.example.nutrisiku.ui.viewmodel.DetectionViewModel
 import java.io.File
-import java.util.concurrent.Executors
-import kotlin.math.min
 
-// ... (Kode lainnya tetap sama) ...
-// --- KODE LAMA ANDA DI SINI ---
+/**
+ * Bottom navigation bar kustom untuk aplikasi NutrisiKu.
+ * Menampilkan tiga tujuan utama: Home, Deteksi (tengah, menonjol), dan Riwayat.
+ *
+ * @param currentRoute Rute saat ini, digunakan untuk menyorot item navigasi yang aktif.
+ * @param onHomeClick Lambda yang akan dieksekusi saat item Home diklik.
+ * @param onDetectionClick Lambda yang akan dieksekusi saat item Deteksi diklik.
+ * @param onHistoryClick Lambda yang akan dieksekusi saat item Riwayat diklik.
+ */
 @Composable
 fun NutrisiKuBottomNavBar(
     currentRoute: String?,
@@ -66,8 +53,8 @@ fun NutrisiKuBottomNavBar(
         NavigationBarItem(
             selected = currentRoute == Screen.Home.route,
             onClick = onHomeClick,
-            icon = { Icon(Icons.Filled.Home, contentDescription = "Home") },
-            label = { Text("Home") },
+            icon = { Icon(Icons.Filled.Home, contentDescription = stringResource(R.string.home_screen_title)) },
+            label = { Text(stringResource(R.string.home_screen_title)) },
             colors = NavigationBarItemDefaults.colors(
                 indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
             )
@@ -79,7 +66,7 @@ fun NutrisiKuBottomNavBar(
             icon = {
                 Icon(
                     Icons.Filled.CameraAlt,
-                    contentDescription = "Deteksi",
+                    contentDescription = stringResource(R.string.detection_screen_title),
                     modifier = Modifier
                         .size(40.dp)
                         .background(MaterialTheme.colorScheme.primary, CircleShape)
@@ -87,7 +74,7 @@ fun NutrisiKuBottomNavBar(
                     tint = Color.White
                 )
             },
-            label = { Text("Deteksi") },
+            label = { Text(stringResource(R.string.detection_screen_title)) },
             colors = NavigationBarItemDefaults.colors(
                 indicatorColor = Color.Transparent
             )
@@ -96,8 +83,8 @@ fun NutrisiKuBottomNavBar(
         NavigationBarItem(
             selected = currentRoute == Screen.History.route,
             onClick = onHistoryClick,
-            icon = { Icon(Icons.Filled.History, contentDescription = "Riwayat") },
-            label = { Text("Riwayat") },
+            icon = { Icon(Icons.Filled.History, contentDescription = stringResource(R.string.history_screen_title)) },
+            label = { Text(stringResource(R.string.history_screen_title)) },
             colors = NavigationBarItemDefaults.colors(
                 indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
             )
@@ -105,54 +92,12 @@ fun NutrisiKuBottomNavBar(
     }
 }
 
-@Composable
-fun DateHeader(date: String, totalCalorie: String) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background) // Latar belakang agar tidak transparan
-            .padding(vertical = 8.dp)
-    ) {
-        Text(text = date, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        Text(text = totalCalorie, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun HistoryEntryCard(
-    imagePath: String,
-    session: String,
-    totalCalorie: Int,
-    onClick: () -> Unit
-) {
-    Card(
-        onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            AsyncImage(
-                model = if (imagePath.isNotEmpty()) File(imagePath) else R.drawable.logo_nutrisiku,
-                contentDescription = session,
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(12.dp)),
-                contentScale = ContentScale.Crop
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = session, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text(text = "Total: $totalCalorie KKAL", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
-            }
-        }
-    }
-}
-
+/**
+ * Dropdown untuk memilih jenis kelamin.
+ *
+ * @param selectedGender Jenis kelamin yang saat ini dipilih.
+ * @param onGenderSelected Lambda yang dipanggil dengan jenis kelamin baru saat dipilih.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GenderDropdown(
@@ -160,7 +105,7 @@ fun GenderDropdown(
     onGenderSelected: (String) -> Unit
 ) {
     var isExpanded by remember { mutableStateOf(false) }
-    val genderOptions = listOf("Pria", "Wanita")
+    val genderOptions = listOf(stringResource(R.string.gender_male), stringResource(R.string.gender_female))
 
     ExposedDropdownMenuBox(
         expanded = isExpanded,
@@ -170,13 +115,8 @@ fun GenderDropdown(
             value = selectedGender,
             onValueChange = {},
             readOnly = true,
-            label = { Text("Jenis Kelamin") },
-            leadingIcon = {
-                Icon(
-                    Icons.Default.Wc,
-                    contentDescription = null
-                )
-            },
+            label = { Text(stringResource(R.string.label_gender)) },
+            leadingIcon = { Icon(Icons.Default.Wc, contentDescription = null) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded) },
             modifier = Modifier
                 .fillMaxWidth()
@@ -193,16 +133,19 @@ fun GenderDropdown(
                     onClick = {
                         onGenderSelected(gender)
                         isExpanded = false
-                    },
-                    colors = MenuDefaults.itemColors(
-                        textColor = MaterialTheme.colorScheme.onSurface
-                    )
+                    }
                 )
             }
         }
     }
 }
 
+/**
+ * Dropdown untuk memilih tingkat aktivitas harian.
+ *
+ * @param selectedActivity Tingkat aktivitas yang saat ini dipilih.
+ * @param onActivitySelected Lambda yang dipanggil dengan tingkat aktivitas baru saat dipilih.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ActivityLevelDropdown(
@@ -210,7 +153,13 @@ fun ActivityLevelDropdown(
     onActivitySelected: (String) -> Unit
 ) {
     var isExpanded by remember { mutableStateOf(false) }
-    val activityOptions = listOf("Jarang Olahraga", "Aktivitas Ringan", "Aktivitas Sedang", "Sangat Aktif", "Ekstra Aktif")
+    val activityOptions = listOf(
+        stringResource(R.string.activity_level_1),
+        stringResource(R.string.activity_level_2),
+        stringResource(R.string.activity_level_3),
+        stringResource(R.string.activity_level_4),
+        stringResource(R.string.activity_level_5)
+    )
 
     ExposedDropdownMenuBox(
         expanded = isExpanded,
@@ -220,7 +169,7 @@ fun ActivityLevelDropdown(
             value = selectedActivity,
             onValueChange = {},
             readOnly = true,
-            label = { Text("Tingkat Aktivitas Harian") },
+            label = { Text(stringResource(R.string.label_activity_level)) },
             leadingIcon = { Icon(Icons.AutoMirrored.Filled.DirectionsRun, contentDescription = null) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded) },
             modifier = Modifier
@@ -238,16 +187,21 @@ fun ActivityLevelDropdown(
                     onClick = {
                         onActivitySelected(activity)
                         isExpanded = false
-                    },
-                    colors = MenuDefaults.itemColors(
-                        textColor = MaterialTheme.colorScheme.onSurface
-                    )
+                    }
                 )
             }
         }
     }
 }
 
+
+/**
+ * Menampilkan gambar hasil deteksi beserta bounding box di atasnya.
+ *
+ * @param bitmap Bitmap yang akan ditampilkan.
+ * @param detectionResults Daftar hasil deteksi untuk digambar.
+ * @param modifier Modifier untuk komponen ini.
+ */
 @Composable
 fun ImageResult(
     bitmap: Bitmap,
@@ -257,13 +211,21 @@ fun ImageResult(
     Box(modifier = modifier) {
         Image(
             bitmap = bitmap.asImageBitmap(),
-            contentDescription = "Hasil Deteksi",
+            contentDescription = stringResource(R.string.detection_result_image_desc),
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
     }
 }
 
+
+/**
+ * Kartu yang menampilkan kebutuhan kalori harian, yang sudah dikonsumsi, dan sisanya.
+ *
+ * @param total Total kebutuhan kalori harian.
+ * @param consumed Jumlah kalori yang sudah dikonsumsi.
+ * @param modifier Modifier untuk komponen ini.
+ */
 @Composable
 fun CalorieCard(
     total: Int,
@@ -280,11 +242,9 @@ fun CalorieCard(
             .fillMaxWidth()
             .shadow(elevation = 4.dp, shape = RoundedCornerShape(16.dp))
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Kebutuhan Kalori Harian:",
+                text = stringResource(R.string.daily_calorie_needs_label),
                 style = MaterialTheme.typography.bodyMedium
             )
             Row(
@@ -297,13 +257,13 @@ fun CalorieCard(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = " KKAL",
+                    text = stringResource(R.string.kcal_unit),
                     style = MaterialTheme.typography.headlineSmall,
                     modifier = Modifier.padding(start = 4.dp, end = 8.dp)
                 )
                 Icon(
                     imageVector = Icons.Filled.LocalFireDepartment,
-                    contentDescription = "Kalori",
+                    contentDescription = stringResource(R.string.content_desc_calories),
                     tint = MaterialTheme.colorScheme.secondary,
                     modifier = Modifier.size(30.dp)
                 )
@@ -320,9 +280,9 @@ fun CalorieCard(
             )
 
             val remainingText = if (remaining <= 0) {
-                "Kebutuhan kalori harian terpenuhi"
+                stringResource(R.string.calorie_needs_met)
             } else {
-                "$remaining KKAL TERSISA"
+                stringResource(R.string.calories_remaining_label, remaining)
             }
 
             Text(
@@ -335,207 +295,16 @@ fun CalorieCard(
         }
     }
 }
-@Composable
-fun RealtimeCameraView(
-    modifier: Modifier = Modifier,
-    viewModel: DetectionViewModel
-) {
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val realtimeUiState by viewModel.realtimeUiState.collectAsState()
-    val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
-    val previewView = remember { PreviewView(context) }
-
-    LaunchedEffect(Unit) {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
-        cameraProviderFuture.addListener({
-            val cameraProvider = cameraProviderFuture.get()
-            val preview = Preview.Builder().build().also {
-                it.surfaceProvider = previewView.surfaceProvider
-            }
-            val imageAnalyzer = ImageAnalysis.Builder()
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .build()
-                .also {
-                    it.setAnalyzer(cameraExecutor) { imageProxy ->
-                        viewModel.analyzeFrame(imageProxy)
-                    }
-                }
-            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-            try {
-                cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(
-                    lifecycleOwner, cameraSelector, preview, imageAnalyzer
-                )
-            } catch (_: Exception) {
-                // Handle error
-            }
-        }, ContextCompat.getMainExecutor(context))
-    }
-
-    Box(modifier = modifier) {
-        AndroidView({ previewView }, modifier = Modifier.fillMaxSize())
-        OverlayCanvas(
-            results = realtimeUiState.rawDetections,
-            modifier = Modifier.fillMaxSize()
-        )
-    }
-}
-
-@Composable
-fun OverlayCanvas(
-    results: List<DetectionResult>,
-    modifier: Modifier = Modifier
-) {
-    Canvas(modifier = modifier) {
-        val modelInputWidth = 320f
-        val modelInputHeight = 320f
-        val canvasWidth = size.width
-        val canvasHeight = size.height
-        val scaleW = canvasWidth / modelInputWidth
-        val scaleH = canvasHeight / modelInputHeight
-        val scale = min(scaleW, scaleH)
-        val offsetX = (canvasWidth - modelInputWidth * scale) / 2
-        val offsetY = (canvasHeight - modelInputHeight * scale) / 2
-
-        results.forEach { result ->
-            val rect = result.boundingBox
-            val scaledLeft = rect.left * scale + offsetX
-            val scaledTop = rect.top * scale + offsetY
-            val scaledRight = rect.right * scale + offsetX
-            val scaledBottom = rect.bottom * scale + offsetY
-
-            drawRect(
-                color = Color.Red,
-                topLeft = Offset(scaledLeft, scaledTop),
-                size = Size(scaledRight - scaledLeft, scaledBottom - scaledTop),
-                style = Stroke(width = 2.dp.toPx())
-            )
-
-            drawContext.canvas.nativeCanvas.apply {
-                val text = "${result.label} (${"%.2f".format(result.confidence)})"
-                val paint = android.graphics.Paint().apply {
-                    color = android.graphics.Color.WHITE
-                    textSize = 16.sp.toPx()
-                    textAlign = android.graphics.Paint.Align.LEFT
-                }
-                val bgPaint = android.graphics.Paint().apply {
-                    color = android.graphics.Color.RED
-                    style = android.graphics.Paint.Style.FILL
-                }
-                val textBounds = android.graphics.Rect()
-                paint.getTextBounds(text, 0, text.length, textBounds)
-                val textBgLeft = scaledLeft
-                val textBgTop = scaledTop - textBounds.height() - 8.dp.toPx()
-                val textBgRight = scaledLeft + textBounds.width() + 8.dp.toPx()
-                val textBgBottom = scaledTop
-                drawRect(textBgLeft, textBgTop, textBgRight, textBgBottom, bgPaint)
-                drawText(text, textBgLeft + 4.dp.toPx(), textBgBottom - 4.dp.toPx(), paint)
-            }
-        }
-    }
-}
 
 
-@Composable
-fun DetectionResultCard(
-    modifier: Modifier = Modifier,
-    viewModel: DetectionViewModel,
-    onManualClick: () -> Unit,
-    onGalleryClick: () -> Unit
-) {
-    val realtimeUiState by viewModel.realtimeUiState.collectAsState()
-
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text("Hasil Deteksi", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 200.dp)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                if (realtimeUiState.groupedItems.isNotEmpty()) {
-                    realtimeUiState.groupedItems.forEach { item ->
-                        RealtimeDetectionResultItem(
-                            item = item,
-                            onLockToggle = { viewModel.toggleLockState(item) }
-                        )
-                    }
-                } else {
-                    Text("Arahkan kamera ke makanan Anda...", style = MaterialTheme.typography.bodyMedium)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text("Total Kalori Terkunci:", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
-                Text("${realtimeUiState.totalLockedCalories} Kkal", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(onClick = onGalleryClick, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) {
-                    Icon(Icons.Default.Image, contentDescription = "Galeri")
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Galeri")
-                }
-                Button(onClick = onManualClick, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) {
-                    Icon(Icons.Default.Edit, contentDescription = "Input Manual")
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Manual")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun RealtimeDetectionResultItem(
-    item: DetectedFoodItem,
-    onLockToggle: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            val displayText = if (item.quantity > 1) "${item.name} x${item.quantity}" else item.name
-            Text(text = displayText, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-            Text(text = "${item.standardPortion}g", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-        }
-
-        Text(text = "${item.caloriesPerPortion * item.quantity} Kkal", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-        IconButton(onClick = onLockToggle) {
-            Icon(
-                imageVector = if (item.isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
-                contentDescription = if (item.isLocked) "Buka Kunci" else "Kunci",
-                tint = if (item.isLocked) MaterialTheme.colorScheme.primary else Color.Gray
-            )
-        }
-    }
-}
-
+/**
+ * Komponen untuk menambah dan mengurangi jumlah (kuantitas).
+ *
+ * @param quantity Jumlah saat ini.
+ * @param onDecrement Lambda yang dieksekusi saat tombol kurang diklik.
+ * @param onIncrement Lambda yang dieksekusi saat tombol tambah diklik.
+ * @param modifier Modifier untuk komponen ini.
+ */
 @Composable
 fun QuantityEditor(
     quantity: Int,
@@ -552,7 +321,7 @@ fun QuantityEditor(
                 contentColor = MaterialTheme.colorScheme.primary
             )
         ) {
-            Icon(Icons.Default.Remove, contentDescription = "Kurangi Jumlah")
+            Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.content_desc_decrement))
         }
 
         Text(
@@ -570,12 +339,16 @@ fun QuantityEditor(
                 contentColor = MaterialTheme.colorScheme.primary
             )
         ) {
-            Icon(Icons.Default.Add, contentDescription = "Tambah Jumlah")
+            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.content_desc_increment))
         }
     }
 }
 
-
+/**
+ * Tampilan yang akan muncul jika izin kamera ditolak.
+ *
+ * @param onRequestPermission Lambda untuk meminta kembali izin kamera.
+ */
 @Composable
 fun PermissionDeniedView(onRequestPermission: () -> Unit) {
     Column(
@@ -583,14 +356,21 @@ fun PermissionDeniedView(onRequestPermission: () -> Unit) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Izin kamera diperlukan untuk fitur ini.")
+        Text(stringResource(R.string.camera_permission_denied_message))
         Spacer(modifier = Modifier.height(8.dp))
         Button(onClick = onRequestPermission) {
-            Text("Berikan Izin")
+            Text(stringResource(R.string.grant_permission_button))
         }
     }
 }
 
+/**
+ * Dialog untuk mengedit porsi makanan dalam gram.
+ *
+ * @param currentPortion Nilai porsi saat ini.
+ * @param onDismiss Lambda yang dieksekusi saat dialog ditutup.
+ * @param onConfirm Lambda yang dieksekusi saat tombol simpan diklik, membawa nilai porsi baru.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PortionEditDialog(
@@ -603,12 +383,12 @@ fun PortionEditDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Ubah Porsi (gram)") },
+        title = { Text(stringResource(R.string.edit_portion_dialog_title)) },
         text = {
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it },
-                label = { Text("Porsi dalam gram") },
+                label = { Text(stringResource(R.string.portion_in_grams_label)) },
                 singleLine = true,
                 isError = isError,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
@@ -624,19 +404,25 @@ fun PortionEditDialog(
                 },
                 enabled = !isError
             ) {
-                Text("Simpan")
+                Text(stringResource(R.string.button_save))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Batal")
+                Text(stringResource(R.string.button_cancel))
             }
         },
         containerColor = MaterialTheme.colorScheme.surface
     )
 }
 
-// PERUBAHAN: Composable untuk SessionDropdown
+/**
+ * Dropdown untuk memilih sesi makan.
+ *
+ * @param selectedSession Sesi yang saat ini dipilih.
+ * @param onSessionSelected Lambda yang dipanggil saat sesi baru dipilih.
+ * @param modifier Modifier untuk komponen ini.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SessionDropdown(
@@ -645,7 +431,12 @@ fun SessionDropdown(
     modifier: Modifier = Modifier
 ) {
     var isExpanded by remember { mutableStateOf(false) }
-    val sessionOptions = listOf("Sarapan", "Makan Siang", "Makan Malam", "Camilan")
+    val sessionOptions = listOf(
+        stringResource(R.string.session_breakfast),
+        stringResource(R.string.session_lunch),
+        stringResource(R.string.session_dinner),
+        stringResource(R.string.session_snack)
+    )
 
     ExposedDropdownMenuBox(
         expanded = isExpanded,
@@ -656,7 +447,7 @@ fun SessionDropdown(
             value = selectedSession,
             onValueChange = {},
             readOnly = true,
-            label = { Text("Simpan Sebagai") },
+            label = { Text(stringResource(R.string.save_as_label)) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded) },
             modifier = Modifier
                 .fillMaxWidth()
@@ -666,7 +457,7 @@ fun SessionDropdown(
         ExposedDropdownMenu(
             expanded = isExpanded,
             onDismissRequest = { isExpanded = false },
-            modifier = Modifier.background(MaterialTheme.colorScheme.surface) // Warna background menu
+            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
         ) {
             sessionOptions.forEach { session ->
                 DropdownMenuItem(
@@ -674,10 +465,7 @@ fun SessionDropdown(
                     onClick = {
                         onSessionSelected(session)
                         isExpanded = false
-                    },
-                    colors = MenuDefaults.itemColors(
-                        textColor = MaterialTheme.colorScheme.onSurface // Warna teks item menu
-                    )
+                    }
                 )
             }
         }

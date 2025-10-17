@@ -7,34 +7,35 @@ import android.os.Build
 import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.nutrisiku.ui.screen.components.QuantityEditor
+import com.example.nutrisiku.R
+import com.example.nutrisiku.ui.screen.components.ImagePicker
+import com.example.nutrisiku.ui.screen.components.ManualFoodItemCard
 import com.example.nutrisiku.ui.screen.components.SessionDropdown
-import com.example.nutrisiku.ui.viewmodel.ManualFoodItem
 import com.example.nutrisiku.ui.viewmodel.ManualInputViewModel
 
+/**
+ * Layar untuk menginput data makanan secara manual.
+ * Pengguna dapat menambahkan beberapa item makanan, mengedit detailnya, dan menyimpannya.
+ *
+ * @param viewModel ViewModel yang mengelola state dan logika untuk input manual.
+ * @param onBackClick Aksi yang dipanggil saat tombol kembali ditekan.
+ * @param onSaveSuccess Aksi yang dipanggil setelah data berhasil disimpan.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ManualInputScreen(
@@ -45,8 +46,6 @@ fun ManualInputScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
-
-    // State untuk mengelola dialog konfirmasi hapus
     var itemIndexToDelete by remember { mutableStateOf<Int?>(null) }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -54,6 +53,7 @@ fun ManualInputScreen(
         onResult = { uri: Uri? ->
             uri?.let {
                 val bitmap = if (Build.VERSION.SDK_INT < 28) {
+                    @Suppress("DEPRECATION")
                     MediaStore.Images.Media.getBitmap(context.contentResolver, it)
                 } else {
                     val source = ImageDecoder.createSource(context.contentResolver, it)
@@ -64,33 +64,33 @@ fun ManualInputScreen(
         }
     )
 
-    // Dialog konfirmasi hapus
+    // Dialog konfirmasi hapus item
     if (itemIndexToDelete != null) {
         AlertDialog(
             onDismissRequest = { itemIndexToDelete = null },
-            title = { Text("Konfirmasi Hapus") },
-            text = { Text("Apakah Anda yakin ingin menghapus item makanan ini?") },
+            title = { Text(stringResource(R.string.delete_food_item_dialog_title)) },
+            text = { Text(stringResource(R.string.delete_food_item_dialog_text)) },
             confirmButton = {
                 TextButton(
                     onClick = {
                         itemIndexToDelete?.let { viewModel.removeFoodItem(it) }
                         itemIndexToDelete = null
                     },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.secondary)
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Hapus")
+                    Text(stringResource(R.string.button_delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { itemIndexToDelete = null }) {
-                    Text("Batal")
+                    Text(stringResource(R.string.button_cancel))
                 }
             },
             containerColor = MaterialTheme.colorScheme.surface
         )
     }
 
-
+    // Efek untuk menampilkan Snackbar saat ada pesan error
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let {
             snackbarHostState.showSnackbar(it)
@@ -98,6 +98,7 @@ fun ManualInputScreen(
         }
     }
 
+    // Efek untuk memicu navigasi saat penyimpanan berhasil
     LaunchedEffect(uiState.isSaveSuccess) {
         if (uiState.isSaveSuccess) {
             onSaveSuccess()
@@ -108,27 +109,24 @@ fun ManualInputScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Input Manual", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.manual_input_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Kembali")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.content_desc_back))
                     }
                 }
             )
         },
         bottomBar = {
+            // Tombol-tombol aksi di bagian bawah layar
             Column(modifier = Modifier.padding(16.dp)) {
-                Button(
+                OutlinedButton(
                     onClick = { viewModel.addFoodItem() },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    )
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Tambah Makanan")
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_other_food_button))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Tambah Makanan Lain")
+                    Text(stringResource(R.string.add_other_food_button))
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
@@ -139,7 +137,7 @@ fun ManualInputScreen(
                         .height(56.dp),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Simpan", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.button_save), fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -147,9 +145,8 @@ fun ManualInputScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp),
-            contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp),
+                .padding(innerPadding),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -164,7 +161,7 @@ fun ManualInputScreen(
                 ManualFoodItemCard(
                     item = item,
                     onItemChange = { updatedItem -> viewModel.onFoodItemChange(index, updatedItem) },
-                    onRemoveClick = { itemIndexToDelete = index }, // Tampilkan dialog saat diklik
+                    onRemoveClick = { itemIndexToDelete = index },
                     isLastItem = uiState.foodItems.size <= 1
                 )
             }
@@ -179,118 +176,3 @@ fun ManualInputScreen(
         }
     }
 }
-
-@Composable
-private fun ManualFoodItemCard(
-    item: ManualFoodItem,
-    onItemChange: (ManualFoodItem) -> Unit,
-    onRemoveClick: () -> Unit,
-    isLastItem: Boolean
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            if (!isLastItem) {
-                IconButton(
-                    onClick = onRemoveClick,
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Icon(
-                        Icons.Default.Close,
-                        contentDescription = "Hapus Makanan",
-                        tint = MaterialTheme.colorScheme.secondary // Samakan warna ikon
-                    )
-                }
-            }
-            OutlinedTextField(
-                value = item.foodName,
-                onValueChange = { onItemChange(item.copy(foodName = it)) },
-                label = { Text("Nama Makanan*") },
-                leadingIcon = { Icon(Icons.Default.Fastfood, contentDescription = null) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-            OutlinedTextField(
-                value = item.portion,
-                onValueChange = { onItemChange(item.copy(portion = it)) },
-                label = { Text("Porsi (gram)*") },
-                leadingIcon = { Icon(Icons.Default.Kitchen, contentDescription = null) },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true
-            )
-            OutlinedTextField(
-                value = item.calories,
-                onValueChange = { onItemChange(item.copy(calories = it)) },
-                label = { Text("Kalori per Porsi*") },
-                leadingIcon = { Icon(Icons.Default.LocalFireDepartment, contentDescription = null) },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true
-            )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Jumlah", style = MaterialTheme.typography.bodyLarge)
-                QuantityEditor(
-                    quantity = item.quantity,
-                    onDecrement = { onItemChange(item.copy(quantity = (item.quantity - 1).coerceAtLeast(1))) },
-                    onIncrement = { onItemChange(item.copy(quantity = item.quantity + 1)) }
-                )
-            }
-        }
-    }
-}
-
-
-@Composable
-private fun ImagePicker(
-    bitmap: Bitmap?,
-    onImageClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .size(150.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .clickable { onImageClick() },
-        contentAlignment = Alignment.Center
-    ) {
-        if (bitmap != null) {
-            Image(
-                bitmap = bitmap.asImageBitmap(),
-                contentDescription = "Gambar Makanan",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
-        } else {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.AddAPhoto,
-                    contentDescription = "Tambah Foto",
-                    modifier = Modifier.size(40.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    "Tambah Foto (Opsional)",
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
-    }
-}
-

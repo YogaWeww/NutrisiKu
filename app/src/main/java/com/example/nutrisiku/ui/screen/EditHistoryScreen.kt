@@ -1,25 +1,55 @@
 package com.example.nutrisiku.ui.screen
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.example.nutrisiku.data.HistoryFoodItem
-import com.example.nutrisiku.ui.screen.components.QuantityEditor
+import com.example.nutrisiku.R
+import com.example.nutrisiku.ui.screen.components.EditableHistoryItem
 import com.example.nutrisiku.ui.screen.components.SessionDropdown
 import com.example.nutrisiku.ui.viewmodel.HistoryDetailViewModel
 
+/**
+ * Layar yang memungkinkan pengguna untuk mengedit entri riwayat makanan yang sudah ada.
+ * Pengguna dapat mengubah sesi makan, nama item, porsi, kalori, kuantitas, dan menghapus item.
+ *
+ * @param viewModel ViewModel yang menyediakan state dan logika untuk detail riwayat.
+ * @param onBackClick Aksi yang dipanggil saat tombol kembali ditekan.
+ * @param onSaveClick Aksi yang dipanggil saat tombol simpan (FAB) ditekan.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditHistoryScreen(
@@ -30,25 +60,26 @@ fun EditHistoryScreen(
     val historyDetail by viewModel.historyDetail.collectAsState()
     var itemIndexToDelete by remember { mutableStateOf<Int?>(null) }
 
+    // Dialog konfirmasi penghapusan item
     if (itemIndexToDelete != null) {
         AlertDialog(
             onDismissRequest = { itemIndexToDelete = null },
-            title = { Text("Hapus Makanan") },
-            text = { Text("Apakah Anda yakin ingin menghapus item ini dari riwayat?") },
+            title = { Text(stringResource(R.string.delete_food_item_dialog_title)) },
+            text = { Text(stringResource(R.string.delete_food_item_dialog_text)) },
             confirmButton = {
                 TextButton(
                     onClick = {
                         itemIndexToDelete?.let { viewModel.onDeleteItem(it) }
                         itemIndexToDelete = null
                     },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.secondary)
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Hapus")
+                    Text(stringResource(R.string.button_delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { itemIndexToDelete = null }) {
-                    Text("Batal")
+                    Text(stringResource(R.string.button_cancel))
                 }
             },
             containerColor = MaterialTheme.colorScheme.surface
@@ -58,10 +89,10 @@ fun EditHistoryScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Edit Riwayat", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.edit_history_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Kembali")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.content_desc_back))
                     }
                 }
             )
@@ -69,15 +100,15 @@ fun EditHistoryScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onSaveClick,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
+                containerColor = MaterialTheme.colorScheme.primary
             ) {
-                Icon(Icons.Default.Check, contentDescription = "Simpan")
+                Icon(Icons.Default.Check, contentDescription = stringResource(R.string.button_save), tint = MaterialTheme.colorScheme.onPrimary)
             }
         }
     ) { innerPadding ->
         val detail = historyDetail
         if (detail == null) {
+            // Tampilkan loading indicator jika data belum siap
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
@@ -86,91 +117,35 @@ fun EditHistoryScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
-                contentPadding = PaddingValues(16.dp)
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                // Dropdown untuk memilih sesi makan
                 item {
                     SessionDropdown(
                         selectedSession = detail.sessionLabel,
-                        onSessionSelected = { newLabel -> viewModel.onSessionLabelChange(newLabel) },
+                        onSessionSelected = viewModel::onSessionLabelChange,
                         modifier = Modifier.fillMaxWidth()
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
 
+                // Daftar item makanan yang dapat diedit
                 itemsIndexed(detail.foodItems) { index, foodItem ->
                     EditableHistoryItem(
                         item = foodItem,
                         onNameChange = { newName -> viewModel.onNameChange(index, newName) },
                         onPortionChange = { newPortion -> viewModel.onPortionChange(index, newPortion) },
-                        // --- PERUBAHAN: Tambahkan callback untuk kalori ---
                         onCaloriesChange = { newCalories -> viewModel.onCaloriesChange(index, newCalories) },
                         onQuantityChange = { newQuantity -> viewModel.onQuantityChange(index, newQuantity) },
                         onDeleteItem = { itemIndexToDelete = index }
                     )
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    if (index < detail.foodItems.lastIndex) {
+                        HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
+                    }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun EditableHistoryItem(
-    item: HistoryFoodItem,
-    onNameChange: (String) -> Unit,
-    onPortionChange: (String) -> Unit,
-    onCaloriesChange: (String) -> Unit, // --- PERUBAHAN: Parameter baru ---
-    onQuantityChange: (Int) -> Unit,
-    onDeleteItem: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            OutlinedTextField(
-                value = item.name,
-                onValueChange = onNameChange,
-                label = { Text("Nama Makanan") },
-                modifier = Modifier.weight(1f)
-            )
-            IconButton(onClick = onDeleteItem) {
-                Icon(Icons.Default.Delete, contentDescription = "Hapus Item", tint = MaterialTheme.colorScheme.secondary)
-            }
-        }
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            OutlinedTextField(
-                value = if (item.portion > 0) item.portion.toString() else "",
-                onValueChange = onPortionChange,
-                label = { Text("Porsi (g)") },
-                modifier = Modifier.weight(1f),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            QuantityEditor(
-                quantity = item.quantity,
-                onDecrement = { onQuantityChange(item.quantity - 1) },
-                onIncrement = { onQuantityChange(item.quantity + 1) }
-            )
-        }
-        // --- PERUBAHAN: Tambahkan field untuk mengedit kalori ---
-        OutlinedTextField(
-            value = if (item.calories > 0) item.calories.toString() else "",
-            onValueChange = onCaloriesChange,
-            label = { Text("Kalori per Porsi") },
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-        )
     }
 }
 

@@ -14,17 +14,29 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.nutrisiku.R
-import com.example.nutrisiku.data.HistoryFoodItem
 import com.example.nutrisiku.ui.navigation.Screen
 import com.example.nutrisiku.ui.screen.components.NutrisiKuBottomNavBar
+import com.example.nutrisiku.ui.screen.components.ReadOnlyHistoryItem
 import com.example.nutrisiku.ui.viewmodel.HistoryDetailViewModel
 import java.io.File
 
+/**
+ * Layar untuk menampilkan detail dari satu entri riwayat makanan.
+ * Menyediakan opsi untuk mengedit atau menghapus entri tersebut.
+ *
+ * @param viewModel ViewModel yang menyediakan state dan logika untuk detail riwayat.
+ * @param onBackClick Aksi yang dipanggil saat tombol kembali ditekan.
+ * @param onDeleteClick Aksi yang dipanggil setelah pengguna mengkonfirmasi penghapusan.
+ * @param onEditClick Aksi yang dipanggil saat tombol edit ditekan, membawa ID riwayat.
+ * @param navigateToHome Aksi navigasi ke layar Home.
+ * @param navigateToDetection Aksi navigasi ke layar Deteksi.
+ * @param navigateToHistory Aksi navigasi ke layar Riwayat.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryDetailScreen(
@@ -39,12 +51,12 @@ fun HistoryDetailScreen(
     val historyDetail by viewModel.historyDetail.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
 
+    // Dialog konfirmasi penghapusan
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Konfirmasi Hapus") },
-            text = { Text("Apakah Anda yakin ingin menghapus riwayat ini? Tindakan ini tidak dapat dibatalkan.") },
-            // --- PERUBAHAN DI SINI ---
+            title = { Text(stringResource(R.string.delete_history_dialog_title)) },
+            text = { Text(stringResource(R.string.delete_history_dialog_text)) },
             containerColor = MaterialTheme.colorScheme.surface,
             confirmButton = {
                 TextButton(
@@ -52,15 +64,14 @@ fun HistoryDetailScreen(
                         onDeleteClick()
                         showDeleteDialog = false
                     },
-                    // --- DAN DI SINI ---
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.secondary)
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Hapus")
+                    Text(stringResource(R.string.button_delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Batal")
+                    Text(stringResource(R.string.button_cancel))
                 }
             }
         )
@@ -69,10 +80,10 @@ fun HistoryDetailScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Detail Riwayat", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.history_detail_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Kembali")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.content_desc_back))
                     }
                 }
             )
@@ -88,8 +99,8 @@ fun HistoryDetailScreen(
         floatingActionButton = {
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 ExtendedFloatingActionButton(
-                    text = { Text("Edit") },
-                    icon = { Icon(Icons.Default.Edit, contentDescription = "Edit") },
+                    text = { Text(stringResource(R.string.button_edit)) },
+                    icon = { Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.button_edit)) },
                     onClick = { historyDetail?.id?.let { onEditClick(it) } },
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
@@ -99,13 +110,14 @@ fun HistoryDetailScreen(
                     containerColor = MaterialTheme.colorScheme.secondary,
                     contentColor = MaterialTheme.colorScheme.onSecondary
                 ) {
-                    Icon(Icons.Default.Delete, contentDescription = "Hapus")
+                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.button_delete))
                 }
             }
         }
     ) { innerPadding ->
         val detail = historyDetail
         if (detail == null) {
+            // Tampilkan loading indicator jika data belum siap
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -118,14 +130,14 @@ fun HistoryDetailScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(horizontal = 16.dp),
-                contentPadding = PaddingValues(vertical = 16.dp)
+                    .padding(innerPadding),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 96.dp) // Tambah padding bawah
             ) {
+                // Tampilkan gambar riwayat
                 item {
                     AsyncImage(
                         model = if (detail.imagePath.isNotEmpty()) File(detail.imagePath) else R.drawable.logo_nutrisiku,
-                        contentDescription = "Detail Makanan",
+                        contentDescription = stringResource(R.string.history_detail_image_desc),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -133,15 +145,19 @@ fun HistoryDetailScreen(
                             .clip(RoundedCornerShape(16.dp))
                     )
                     Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        stringResource(R.string.history_detail_food_items),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
+                // Daftar item makanan
                 items(detail.foodItems) { foodItem ->
                     ReadOnlyHistoryItem(foodItem = foodItem)
-                    HorizontalDivider(
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        thickness = DividerDefaults.Thickness,
-                        color = DividerDefaults.color
-                    )
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 }
+                // Tampilan total kalori
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(
@@ -149,37 +165,16 @@ fun HistoryDetailScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Total Kalori:", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        Text("${detail.totalCalories} KKAL", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        Text(stringResource(R.string.total_calories_label), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        Text(
+                            stringResource(R.string.kcal_value, detail.totalCalories),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
-                    Spacer(modifier = Modifier.height(80.dp))
                 }
             }
         }
     }
 }
-
-@Composable
-fun ReadOnlyHistoryItem(foodItem: HistoryFoodItem) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            val displayName = if (foodItem.quantity > 1) {
-                "${foodItem.name} x${foodItem.quantity}"
-            } else {
-                foodItem.name
-            }
-            Text(displayName, style = MaterialTheme.typography.bodyLarge)
-
-            val portionText = "(${foodItem.portion}g per item)"
-            Text(portionText, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
-        }
-        val totalCalorieText = "${foodItem.calories * foodItem.quantity} KKAL"
-        Text(totalCalorieText, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
-    }
-}
-
