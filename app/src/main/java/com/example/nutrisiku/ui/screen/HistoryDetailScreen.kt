@@ -20,8 +20,8 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.nutrisiku.R
 import com.example.nutrisiku.ui.navigation.Screen
-import com.example.nutrisiku.ui.screen.components.NutrisiKuBottomNavBar
-import com.example.nutrisiku.ui.screen.components.ReadOnlyHistoryItem
+import com.example.nutrisiku.ui.components.NutrisiKuBottomNavBar
+import com.example.nutrisiku.ui.components.ReadOnlyHistoryItem
 import com.example.nutrisiku.ui.viewmodel.HistoryDetailViewModel
 import java.io.File
 
@@ -86,14 +86,6 @@ fun HistoryDetailScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.content_desc_back))
                     }
                 }
-            )
-        },
-        bottomBar = {
-            NutrisiKuBottomNavBar(
-                currentRoute = Screen.History.route,
-                onHomeClick = navigateToHome,
-                onDetectionClick = navigateToDetection,
-                onHistoryClick = navigateToHistory
             )
         },
         floatingActionButton = {

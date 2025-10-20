@@ -32,9 +32,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.nutrisiku.R
-import com.example.nutrisiku.ui.screen.components.DetectionResultCard
-import com.example.nutrisiku.ui.screen.components.PermissionDeniedView
-import com.example.nutrisiku.ui.screen.components.RealtimeCameraView
+import com.example.nutrisiku.ui.components.DetectionResultCard
+import com.example.nutrisiku.ui.components.PermissionDeniedView
+import com.example.nutrisiku.ui.components.RealtimeCameraView
 import com.example.nutrisiku.ui.viewmodel.DetectionViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
@@ -132,7 +132,6 @@ fun DetectionScreen(
                 )
             }
 
-            // PERBAIKAN: Panggil DetectionResultCard dengan parameter yang benar
             DetectionResultCard(
                 realtimeUiState = realtimeUiState,
                 onLockToggle = viewModel::toggleLockState,

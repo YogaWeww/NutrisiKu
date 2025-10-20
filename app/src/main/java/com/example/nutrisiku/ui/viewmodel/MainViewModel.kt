@@ -1,21 +1,24 @@
 package com.example.nutrisiku.ui.viewmodel
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.nutrisiku.data.UserRepository
 import com.example.nutrisiku.ui.navigation.Screen
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-class MainViewModel(application: Application) : AndroidViewModel(application) {
-    // Inisialisasi UserRepository sesuai dengan kode Anda
-    private val userRepository = UserRepository(application)
+/**
+ * ViewModel utama aplikasi yang bertanggung jawab untuk logika awal aplikasi,
+ * seperti menentukan layar pertama yang harus ditampilkan (onboarding atau home).
+ *
+ * @param userRepository Repository untuk mengakses data pengguna dan status onboarding.
+ */
+class MainViewModel(
+    private val userRepository: UserRepository
+) : ViewModel() {
 
-    // Variabel _isLoading dan _startDestination dari kode Anda dipertahankan
     private val _isLoading = MutableStateFlow(true)
     val isLoading = _isLoading.asStateFlow()
 
@@ -24,32 +27,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         viewModelScope.launch {
-            // Gabungkan dua data: status onboarding dan data profil
+            // Gabungkan dua Flow: status onboarding dan data profil pengguna.
             userRepository.onboardingCompleted.combine(userRepository.userDataFlow) { onboardingCompleted, user ->
-                // Tentukan layar awal berdasarkan kedua data tersebut
-                if (!onboardingCompleted) {
-                    // 1. Jika onboarding belum pernah selesai, tujuan PASTI ke OnboardingScreen
-                    Screen.Onboarding.route
-                } else if (user.name.isNotEmpty()) {
-                    // 2. Jika onboarding sudah selesai DAN nama sudah diisi, tujuan ke HomeScreen
-                    Screen.Home.route
-                } else {
-                    // 3. Jika onboarding sudah selesai TAPI nama masih kosong, tujuan ke ProfileInputScreen
-                    Screen.ProfileInput.route
+                // Tentukan rute awal berdasarkan kondisi:
+                when {
+                    !onboardingCompleted -> Screen.Onboarding.route // 1. Onboarding belum selesai -> Tampilkan Onboarding
+                    user.name.isNotEmpty() -> Screen.Home.route    // 2. Onboarding selesai & profil valid -> Tampilkan Home
+                    else -> Screen.ProfileInput.route               // 3. Onboarding selesai & profil kosong -> Tampilkan ProfileInput
                 }
             }.collect { destination ->
-                // Simpan tujuan yang sudah ditentukan
                 _startDestination.value = destination
-                // Hentikan status loading
                 _isLoading.value = false
             }
         }
     }
 
-    // Fungsi ini akan kita panggil dari UI saat pengguna menyelesaikan onboarding
+    /**
+     * Menandai bahwa proses onboarding telah selesai.
+     */
     fun setOnboardingCompleted() {
         viewModelScope.launch {
             userRepository.setOnboardingCompleted()
         }
     }
 }
+

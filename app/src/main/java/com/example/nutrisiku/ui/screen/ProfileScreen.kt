@@ -30,9 +30,9 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.nutrisiku.R
 import com.example.nutrisiku.ui.navigation.Screen
-import com.example.nutrisiku.ui.screen.components.CalorieCard
-import com.example.nutrisiku.ui.screen.components.EditProfileButton
-import com.example.nutrisiku.ui.screen.components.NutrisiKuBottomNavBar
+import com.example.nutrisiku.ui.components.CalorieCard
+import com.example.nutrisiku.ui.components.EditProfileButton
+import com.example.nutrisiku.ui.components.NutrisiKuBottomNavBar
 import com.example.nutrisiku.ui.viewmodel.HistoryViewModel
 import com.example.nutrisiku.ui.viewmodel.ProfileViewModel
 import java.io.File

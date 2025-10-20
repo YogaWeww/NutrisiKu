@@ -38,8 +38,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.nutrisiku.R
-import com.example.nutrisiku.ui.screen.components.EditableHistoryItem
-import com.example.nutrisiku.ui.screen.components.SessionDropdown
+import com.example.nutrisiku.ui.components.EditableHistoryItem
+import com.example.nutrisiku.ui.components.SessionDropdown
 import com.example.nutrisiku.ui.viewmodel.HistoryDetailViewModel
 
 /**

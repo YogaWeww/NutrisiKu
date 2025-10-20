@@ -1,4 +1,4 @@
-package com.example.nutrisiku.ui.screen.components
+package com.example.nutrisiku.ui.components
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row

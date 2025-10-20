@@ -24,29 +24,23 @@ class ViewModelFactory(private val application: Application) : ViewModelProvider
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
-        // Dapatkan SavedStateHandle dari extras. Ini disediakan secara otomatis oleh NavHost
-        // untuk ViewModel yang perlu menyimpan dan memulihkan state.
         val savedStateHandle = extras.createSavedStateHandle()
 
-        // --- PERBAIKAN: Inisialisasi Dependensi dengan Benar ---
-        // 1. Dapatkan instance database
+        // Inisialisasi semua dependensi di satu tempat
         val database = NutrisiKuDatabase.getDatabase(application)
-        // 2. Dapatkan DAO dari database
         val historyDao = database.historyDao()
-
-        // 3. Inisialisasi semua repository dengan dependensi yang sesuai
         val userRepository = UserRepository(application)
-        // 4. Suntikkan historyDao ke dalam HistoryRepository
         val historyRepository = HistoryRepository(historyDao)
         val nutritionRepository = NutritionRepository(application)
 
-        // Buat instance ViewModel yang sesuai dengan kelas yang diminta
+        // Buat instance ViewModel yang sesuai dengan kelas yang diminta,
+        // dengan menyuntikkan dependensi yang benar.
         return when {
             modelClass.isAssignableFrom(MainViewModel::class.java) -> {
-                MainViewModel(application) as T
+                MainViewModel(userRepository) as T
             }
             modelClass.isAssignableFrom(ProfileViewModel::class.java) -> {
-                ProfileViewModel(userRepository) as T
+                ProfileViewModel(application, userRepository) as T
             }
             modelClass.isAssignableFrom(HistoryViewModel::class.java) -> {
                 HistoryViewModel(application, historyRepository) as T
@@ -60,8 +54,8 @@ class ViewModelFactory(private val application: Application) : ViewModelProvider
             modelClass.isAssignableFrom(HistoryDetailViewModel::class.java) -> {
                 HistoryDetailViewModel(application, savedStateHandle, historyRepository, nutritionRepository) as T
             }
-            // Jika kelas ViewModel tidak dikenal, lemparkan exception
             else -> throw IllegalArgumentException("Unknown ViewModel class: " + modelClass.name)
         }
     }
 }
+

@@ -4,6 +4,7 @@ import android.app.Application
 import android.graphics.Bitmap
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.nutrisiku.R
 import com.example.nutrisiku.data.HistoryEntity
 import com.example.nutrisiku.data.HistoryFoodItem
 import com.example.nutrisiku.data.HistoryRepository
@@ -16,34 +17,67 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.util.Calendar
 
-// Data class untuk satu item makanan dalam daftar input manual
+/**
+ * Data class untuk merepresentasikan satu item makanan dalam daftar input manual.
+ * Menggunakan String untuk input pengguna agar lebih fleksibel sebelum divalidasi.
+ *
+ * @property id ID unik untuk setiap item, berguna untuk key di LazyColumn.
+ * @property foodName Nama makanan yang diinput pengguna.
+ * @property portion Porsi dalam gram (sebagai String).
+ * @property calories Kalori per porsi (sebagai String).
+ * @property quantity Jumlah item ini.
+ */
 data class ManualFoodItem(
-    val id: Long = System.currentTimeMillis(), // ID unik untuk setiap item
+    val id: Long = System.currentTimeMillis(),
     val foodName: String = "",
     val portion: String = "",
     val calories: String = "",
     val quantity: Int = 1
 )
 
+/**
+ * UI State untuk layar Input Manual.
+ *
+ * @property foodItems Daftar item makanan yang sedang diinput oleh pengguna.
+ * @property selectedBitmap Bitmap gambar yang dipilih (opsional).
+ * @property errorMessage Pesan eror untuk ditampilkan di Snackbar.
+ * @property isSaveSuccess Status apakah penyimpanan berhasil, untuk memicu navigasi.
+ * @property sessionLabel Label sesi makan yang dipilih.
+ * @property isSaveButtonEnabled Status apakah tombol simpan bisa diklik (berdasarkan validasi).
+ */
 data class ManualInputUiState(
-    val foodItems: List<ManualFoodItem> = listOf(ManualFoodItem()), // Mulai dengan satu item kosong
+    val foodItems: List<ManualFoodItem> = listOf(ManualFoodItem()),
     val selectedBitmap: Bitmap? = null,
     val errorMessage: String? = null,
     val isSaveSuccess: Boolean = false,
-    val sessionLabel: String = "Sarapan",
+    val sessionLabel: String = "",
     val isSaveButtonEnabled: Boolean = false
 )
 
+/**
+ * ViewModel untuk layar Input Manual.
+ * Mengelola state dari daftar makanan yang diinput, validasi, dan proses penyimpanan.
+ *
+ * @param application Konteks aplikasi.
+ * @param historyRepository Repository untuk menyimpan data ke database riwayat.
+ */
 class ManualInputViewModel(
-    application: Application,
+    private val application: Application,
     private val historyRepository: HistoryRepository
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(ManualInputUiState())
     val uiState = _uiState.asStateFlow()
 
-    // Fungsi untuk memperbarui properti dari item makanan tertentu
+    init {
+        _uiState.update { it.copy(sessionLabel = getAutomaticSessionLabel()) }
+    }
+
+    /**
+     * Memperbarui properti dari item makanan tertentu berdasarkan indeks.
+     */
     fun onFoodItemChange(index: Int, updatedItem: ManualFoodItem) {
         _uiState.update { currentState ->
             val updatedList = currentState.foodItems.toMutableList()
@@ -55,7 +89,9 @@ class ManualInputViewModel(
         validateState()
     }
 
-    // Fungsi untuk menambah item makanan baru ke daftar
+    /**
+     * Menambah item makanan baru yang kosong ke dalam daftar.
+     */
     fun addFoodItem() {
         _uiState.update { currentState ->
             currentState.copy(foodItems = currentState.foodItems + ManualFoodItem())
@@ -63,16 +99,14 @@ class ManualInputViewModel(
         validateState()
     }
 
-    // Fungsi untuk menghapus item makanan dari daftar
+    /**
+     * Menghapus item makanan dari daftar berdasarkan indeks.
+     */
     fun removeFoodItem(index: Int) {
         _uiState.update { currentState ->
             val updatedList = currentState.foodItems.toMutableList()
-            if (index in updatedList.indices) {
+            if (index in updatedList.indices && updatedList.size > 1) {
                 updatedList.removeAt(index)
-            }
-            // Jika daftar menjadi kosong, tambahkan satu item kosong kembali
-            if (updatedList.isEmpty()) {
-                updatedList.add(ManualFoodItem())
             }
             currentState.copy(foodItems = updatedList)
         }
@@ -81,26 +115,25 @@ class ManualInputViewModel(
 
     fun onImageSelected(bitmap: Bitmap) { _uiState.update { it.copy(selectedBitmap = bitmap) } }
     fun onSessionLabelChange(newLabel: String) { _uiState.update { it.copy(sessionLabel = newLabel) } }
-    fun clearState() { _uiState.value = ManualInputUiState() }
     fun errorMessageShown() { _uiState.update { it.copy(errorMessage = null) } }
 
+    /**
+     * Me-reset state ViewModel ke kondisi awal.
+     * Dipanggil setelah navigasi keluar dari layar ini.
+     */
+    fun clearState() {
+        _uiState.value = ManualInputUiState(sessionLabel = getAutomaticSessionLabel())
+    }
+
+    /**
+     * Memvalidasi dan menyimpan entri manual ke database riwayat.
+     */
     fun saveManualEntry() {
         viewModelScope.launch {
             val currentState = _uiState.value
+            if (!currentState.isSaveButtonEnabled) return@launch
 
-            // Validasi: Pastikan tidak ada item yang kosong
-            val allItemsValid = currentState.foodItems.all {
-                it.foodName.isNotBlank() && it.portion.isNotBlank() && it.calories.isNotBlank()
-            }
-
-            if (!allItemsValid) {
-                _uiState.update { it.copy(errorMessage = "Semua kolom pada setiap makanan wajib diisi.") }
-                return@launch
-            }
-
-            val imagePath = if (currentState.selectedBitmap != null) {
-                saveBitmapToInternalStorage(currentState.selectedBitmap)
-            } else { "" }
+            val imagePath = currentState.selectedBitmap?.let { saveBitmapToInternalStorage(it) } ?: ""
 
             val historyFoodItems = currentState.foodItems.map {
                 HistoryFoodItem(
@@ -116,7 +149,7 @@ class ManualInputViewModel(
             val historyEntity = HistoryEntity(
                 timestamp = System.currentTimeMillis(),
                 sessionLabel = currentState.sessionLabel,
-                imagePath = imagePath ?: "",
+                imagePath = imagePath,
                 totalCalories = totalCalories,
                 foodItems = historyFoodItems
             )
@@ -126,6 +159,11 @@ class ManualInputViewModel(
         }
     }
 
+    /**
+     * Menyimpan Bitmap ke penyimpanan internal aplikasi.
+     * CATATAN: Fungsi ini duplikat dengan yang ada di DetectionViewModel.
+     * Kandidat yang baik untuk di-refactor ke sebuah kelas utility atau repository terpisah.
+     */
     private suspend fun saveBitmapToInternalStorage(bitmap: Bitmap): String? {
         return withContext(Dispatchers.IO) {
             val filename = "manual_${System.currentTimeMillis()}.jpg"
@@ -142,12 +180,30 @@ class ManualInputViewModel(
         }
     }
 
+    /**
+     * Memvalidasi state saat ini untuk menentukan apakah tombol simpan harus aktif.
+     */
     private fun validateState() {
         _uiState.update { currentState ->
             val allItemsValid = currentState.foodItems.all {
-                it.foodName.isNotBlank() && it.portion.isNotBlank() && it.calories.isNotBlank()
+                it.foodName.isNotBlank() &&
+                        (it.portion.toIntOrNull() ?: 0) > 0 &&
+                        (it.calories.toIntOrNull() ?: 0) > 0
             }
             currentState.copy(isSaveButtonEnabled = allItemsValid)
+        }
+    }
+
+    /**
+     * Menentukan label sesi makan secara otomatis berdasarkan waktu saat ini.
+     */
+    private fun getAutomaticSessionLabel(): String {
+        val resources = getApplication<Application>().resources
+        return when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
+            in 0..10 -> resources.getString(R.string.session_breakfast)
+            in 11..15 -> resources.getString(R.string.session_lunch)
+            in 16..20 -> resources.getString(R.string.session_dinner)
+            else -> resources.getString(R.string.session_snack)
         }
     }
 }

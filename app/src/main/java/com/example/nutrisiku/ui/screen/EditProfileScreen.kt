@@ -1,15 +1,33 @@
 package com.example.nutrisiku.ui.screen
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Cake
+import androidx.compose.material.icons.filled.Height
+import androidx.compose.material.icons.filled.MonitorWeight
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Button
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
@@ -17,38 +35,25 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.nutrisiku.R
-import com.example.nutrisiku.ui.navigation.Screen
-import com.example.nutrisiku.ui.screen.components.ActivityLevelDropdown
-import com.example.nutrisiku.ui.screen.components.GenderDropdown
-import com.example.nutrisiku.ui.screen.components.NutrisiKuBottomNavBar
+import com.example.nutrisiku.ui.components.ActivityLevelDropdown
+import com.example.nutrisiku.ui.components.GenderDropdown
 import com.example.nutrisiku.ui.viewmodel.ProfileViewModel
 
 /**
- * Layar untuk mengedit data profil pengguna yang sudah ada.
+ * Layar yang berfungsi sebagai formulir untuk mengedit data profil pengguna.
  *
  * @param viewModel ViewModel yang mengelola state dan logika untuk profil.
  * @param onBackClick Aksi untuk kembali ke layar sebelumnya.
- * @param onSaveClick Aksi yang dipanggil saat tombol simpan diklik.
- * @param navigateToHome Aksi navigasi ke layar Home.
- * @param navigateToDetection Aksi navigasi ke layar Deteksi.
- * @param navigateToHistory Aksi navigasi ke layar Riwayat.
+ * @param onSaveClick Aksi yang dipanggil saat tombol simpan ditekan.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProfileScreen(
     viewModel: ProfileViewModel,
     onBackClick: () -> Unit,
-    onSaveClick: () -> Unit,
-    navigateToHome: () -> Unit,
-    navigateToDetection: () -> Unit,
-    navigateToHistory: () -> Unit
+    onSaveClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-
-    // Memuat data awal saat layar pertama kali ditampilkan
-    LaunchedEffect(Unit) {
-        viewModel.loadInitialData()
-    }
 
     Scaffold(
         topBar = {
@@ -60,14 +65,6 @@ fun EditProfileScreen(
                     }
                 }
             )
-        },
-        bottomBar = {
-            NutrisiKuBottomNavBar(
-                currentRoute = Screen.Profile.route, // Tetap menyorot ikon profil
-                onHomeClick = navigateToHome,
-                onDetectionClick = navigateToDetection,
-                onHistoryClick = navigateToHistory
-            )
         }
     ) { innerPadding ->
         Column(
@@ -75,8 +72,7 @@ fun EditProfileScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .verticalScroll(rememberScrollState())
         ) {
             Text(
                 text = stringResource(R.string.profile_input_required_fields_note),
@@ -84,6 +80,7 @@ fun EditProfileScreen(
                 fontStyle = FontStyle.Italic,
                 color = MaterialTheme.colorScheme.primary
             )
+            Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
                 value = uiState.name,
@@ -93,6 +90,8 @@ fun EditProfileScreen(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
+            Spacer(modifier = Modifier.height(8.dp))
+
             OutlinedTextField(
                 value = uiState.age,
                 onValueChange = viewModel::onAgeChange,
@@ -102,6 +101,8 @@ fun EditProfileScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true
             )
+            Spacer(modifier = Modifier.height(8.dp))
+
             OutlinedTextField(
                 value = uiState.weight,
                 onValueChange = viewModel::onWeightChange,
@@ -111,6 +112,8 @@ fun EditProfileScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true
             )
+            Spacer(modifier = Modifier.height(8.dp))
+
             OutlinedTextField(
                 value = uiState.height,
                 onValueChange = viewModel::onHeightChange,
@@ -120,16 +123,20 @@ fun EditProfileScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true
             )
+            Spacer(modifier = Modifier.height(8.dp))
+
             GenderDropdown(
                 selectedGender = uiState.gender,
                 onGenderSelected = viewModel::onGenderChange
             )
+            Spacer(modifier = Modifier.height(8.dp))
+
             ActivityLevelDropdown(
                 selectedActivity = uiState.activityLevel,
                 onActivitySelected = viewModel::onActivityLevelChange
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Button(
                 onClick = onSaveClick,
@@ -144,3 +151,4 @@ fun EditProfileScreen(
         }
     }
 }
+

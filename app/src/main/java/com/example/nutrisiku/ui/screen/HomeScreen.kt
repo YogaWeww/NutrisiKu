@@ -9,12 +9,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.nutrisiku.ui.navigation.Screen
-import com.example.nutrisiku.ui.screen.components.CalorieCard
-import com.example.nutrisiku.ui.screen.components.DateCard
-import com.example.nutrisiku.ui.screen.components.DetectNowButton
-import com.example.nutrisiku.ui.screen.components.HeaderSection
-import com.example.nutrisiku.ui.screen.components.HistorySection
-import com.example.nutrisiku.ui.screen.components.NutrisiKuBottomNavBar
+import com.example.nutrisiku.ui.components.CalorieCard
+import com.example.nutrisiku.ui.components.DateCard
+import com.example.nutrisiku.ui.components.DetectNowButton
+import com.example.nutrisiku.ui.components.HeaderSection
+import com.example.nutrisiku.ui.components.HistorySection
+import com.example.nutrisiku.ui.components.NutrisiKuBottomNavBar
 import com.example.nutrisiku.ui.viewmodel.HistoryViewModel
 import com.example.nutrisiku.ui.viewmodel.ProfileViewModel
 

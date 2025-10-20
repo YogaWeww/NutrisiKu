@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.example.nutrisiku.data.HistoryEntity
+import com.example.nutrisiku.data.HistoryFoodItem
 import com.example.nutrisiku.data.HistoryRepository
 import com.example.nutrisiku.data.FoodNutrition
 import com.example.nutrisiku.data.NutritionRepository
@@ -30,23 +31,18 @@ class HistoryDetailViewModel(
     private val nutritionRepository: NutritionRepository
 ) : AndroidViewModel(application) {
 
-    // Mendapatkan ID riwayat dari argumen navigasi.
     private val historyId: Int = savedStateHandle.get<Int>("historyId") ?: -1
 
     private val _historyDetail = MutableStateFlow<HistoryEntity?>(null)
     val historyDetail = _historyDetail.asStateFlow()
 
-    // PERBAIKAN: Mengakses properti, bukan memanggil fungsi.
     private val nutritionData: Map<String, FoodNutrition> by lazy {
         nutritionRepository.nutritionData
     }
 
-    // PENINGKATAN: Buat map kedua yang dioptimalkan untuk pencarian berdasarkan nama tampilan.
-    // Ini jauh lebih efisien daripada menggunakan .find() pada list setiap saat.
     private val nutritionDataByName: Map<String, FoodNutrition> by lazy {
         nutritionData.values.associateBy { it.nama_tampilan }
     }
-
 
     init {
         if (historyId != -1) {
@@ -58,7 +54,28 @@ class HistoryDetailViewModel(
         }
     }
 
+    /**
+     * Fungsi helper privat untuk memodifikasi daftar item makanan dan menghitung ulang total kalori.
+     * Ini mengurangi duplikasi kode di fungsi-fungsi handler event.
+     *
+     * @param action Lambda yang berisi logika modifikasi pada daftar item makanan.
+     */
+    private fun updateFoodItemsAndRecalculate(action: (MutableList<HistoryFoodItem>) -> Unit) {
+        _historyDetail.update { currentDetail ->
+            currentDetail?.let { detail ->
+                val updatedItems = detail.foodItems.toMutableList()
+                action(updatedItems)
+                val newTotalCalories = updatedItems.sumOf { it.calories * it.quantity }
+                detail.copy(foodItems = updatedItems, totalCalories = newTotalCalories)
+            }
+        }
+    }
+
+    /**
+     * Memperbarui nama item makanan pada indeks tertentu.
+     */
     fun onNameChange(itemIndex: Int, newName: String) {
+        // Aksi ini tidak memengaruhi total kalori, jadi bisa ditangani secara terpisah.
         _historyDetail.update { currentDetail ->
             currentDetail?.copy(
                 foodItems = currentDetail.foodItems.mapIndexed { index, item ->
@@ -68,104 +85,89 @@ class HistoryDetailViewModel(
         }
     }
 
+    /**
+     * Memperbarui porsi item makanan dan menghitung ulang kalorinya.
+     */
     fun onPortionChange(itemIndex: Int, newPortionString: String) {
-        _historyDetail.update { currentDetail ->
-            currentDetail?.let {
-                val updatedItems = it.foodItems.toMutableList()
-                if (itemIndex in updatedItems.indices) {
-                    val oldItem = updatedItems[itemIndex]
-                    val newPortion = newPortionString.toIntOrNull() ?: 0
-
-                    // PENINGKATAN: Gunakan map yang efisien untuk lookup.
-                    val foodInfo = nutritionDataByName[oldItem.name]
-
-                    val newCalories = foodInfo?.let { nutrition ->
-                        (nutrition.kalori_per_100g / 100.0 * newPortion).toInt()
-                    } ?: oldItem.calories
-
-                    updatedItems[itemIndex] = oldItem.copy(
-                        portion = newPortion,
-                        calories = newCalories
-                    )
-                }
-                val newTotalCalories = updatedItems.sumOf { item -> item.calories * item.quantity }
-                it.copy(foodItems = updatedItems, totalCalories = newTotalCalories)
+        updateFoodItemsAndRecalculate { items ->
+            if (itemIndex in items.indices) {
+                val oldItem = items[itemIndex]
+                val newPortion = newPortionString.toIntOrNull() ?: 0
+                val foodInfo = nutritionDataByName[oldItem.name]
+                val newCalories = foodInfo?.let { (it.kalori_per_100g / 100.0 * newPortion).toInt() } ?: oldItem.calories
+                items[itemIndex] = oldItem.copy(portion = newPortion, calories = newCalories)
             }
         }
     }
 
+    /**
+     * Memperbarui kalori item makanan secara manual.
+     */
     fun onCaloriesChange(itemIndex: Int, newCaloriesString: String) {
-        _historyDetail.update { currentDetail ->
-            currentDetail?.let {
-                val updatedItems = it.foodItems.toMutableList()
-                if (itemIndex in updatedItems.indices) {
-                    val oldItem = updatedItems[itemIndex]
-                    val newCalories = newCaloriesString.toIntOrNull() ?: 0
-                    updatedItems[itemIndex] = oldItem.copy(calories = newCalories)
-                }
-                val newTotalCalories = updatedItems.sumOf { item -> item.calories * item.quantity }
-                it.copy(foodItems = updatedItems, totalCalories = newTotalCalories)
+        updateFoodItemsAndRecalculate { items ->
+            if (itemIndex in items.indices) {
+                val newCalories = newCaloriesString.toIntOrNull() ?: 0
+                items[itemIndex] = items[itemIndex].copy(calories = newCalories)
             }
         }
     }
 
-
+    /**
+     * Memperbarui kuantitas item makanan.
+     */
     fun onQuantityChange(itemIndex: Int, newQuantity: Int) {
         if (newQuantity <= 0) return
-
-        _historyDetail.update { currentDetail ->
-            currentDetail?.let {
-                val updatedItems = it.foodItems.toMutableList()
-                if (itemIndex in updatedItems.indices) {
-                    val oldItem = updatedItems[itemIndex]
-                    updatedItems[itemIndex] = oldItem.copy(quantity = newQuantity)
-                }
-                val newTotalCalories = updatedItems.sumOf { item -> item.calories * item.quantity }
-                it.copy(foodItems = updatedItems, totalCalories = newTotalCalories)
+        updateFoodItemsAndRecalculate { items ->
+            if (itemIndex in items.indices) {
+                items[itemIndex] = items[itemIndex].copy(quantity = newQuantity)
             }
         }
     }
 
+    /**
+     * Menghapus item makanan dari daftar.
+     */
     fun onDeleteItem(itemIndex: Int) {
-        _historyDetail.update { currentDetail ->
-            currentDetail?.let {
-                val updatedItems = it.foodItems.toMutableList()
-                if (itemIndex in updatedItems.indices) {
-                    updatedItems.removeAt(itemIndex)
-                }
-                val newTotalCalories = updatedItems.sumOf { item -> item.calories * item.quantity }
-                it.copy(foodItems = updatedItems, totalCalories = newTotalCalories)
+        updateFoodItemsAndRecalculate { items ->
+            if (itemIndex in items.indices) {
+                items.removeAt(itemIndex)
             }
         }
     }
 
+    /**
+     * Memperbarui label sesi makan.
+     */
     fun onSessionLabelChange(newLabel: String) {
-        _historyDetail.update { currentDetail ->
-            currentDetail?.copy(sessionLabel = newLabel)
-        }
+        _historyDetail.update { it?.copy(sessionLabel = newLabel) }
     }
 
+    /**
+     * Menyimpan perubahan ke database. Jika semua item makanan dihapus,
+     * entri riwayat akan dihapus seluruhnya.
+     * @param onComplete Callback yang menginformasikan apakah entri dihapus (true) atau hanya diperbarui (false).
+     */
     fun updateOrDeleteHistory(onComplete: (wasDeleted: Boolean) -> Unit) {
         viewModelScope.launch {
             _historyDetail.value?.let { detail ->
                 if (detail.foodItems.isEmpty()) {
                     historyRepository.delete(detail)
-                    Log.d("HistoryDetailVM", "History item deleted because it was empty.")
                     onComplete(true)
                 } else {
                     historyRepository.update(detail)
-                    Log.d("HistoryDetailVM", "History item updated.")
                     onComplete(false)
                 }
             }
         }
     }
 
+    /**
+     * Menghapus seluruh entri riwayat dari database.
+     */
     fun deleteHistory() {
         viewModelScope.launch {
-            _historyDetail.value?.let {
-                historyRepository.delete(it)
-            }
+            _historyDetail.value?.let { historyRepository.delete(it) }
         }
     }
 }
+

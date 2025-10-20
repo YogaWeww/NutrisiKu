@@ -6,6 +6,7 @@ import android.graphics.Matrix
 import androidx.camera.core.ImageProxy
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.nutrisiku.R
 import com.example.nutrisiku.data.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -18,14 +19,14 @@ import java.io.IOException
 import java.util.Calendar
 
 /**
- * Data class untuk merepresentasikan satu item makanan yang terdeteksi di UI.
+ * Data class to represent a single detected food item in the UI.
  *
- * @property name Nama tampilan makanan (mis. "Nasi Goreng").
- * @property standardPortion Porsi standar dalam gram.
- * @property caloriesPerPortion Kalori untuk porsi standar.
- * @property quantity Jumlah item ini yang terdeteksi.
- * @property originalResult Hasil deteksi mentah dari model TFLite.
- * @property isLocked Status apakah item ini telah dikunci oleh pengguna.
+ * @property name The display name of the food (e.g., "Nasi Goreng").
+ * @property standardPortion The standard portion size in grams.
+ * @property caloriesPerPortion Calories for the standard portion.
+ * @property quantity The number of this item detected.
+ * @property originalResult The raw detection result from the TFLite model.
+ * @property isLocked Whether this item has been locked by the user.
  */
 data class DetectedFoodItem(
     val name: String,
@@ -37,31 +38,31 @@ data class DetectedFoodItem(
 )
 
 /**
- * UI State untuk layar hasil deteksi (setelah memilih dari galeri atau mengkonfirmasi dari kamera).
+ * UI State for the detection result screen (after picking from gallery or confirming from camera).
  *
- * @property selectedBitmap Bitmap gambar yang dianalisis.
- * @property detectedItems Daftar item makanan yang terdeteksi dan dikelompokkan.
- * @property totalCalories Total kalori dari semua item yang terdeteksi.
- * @property isLoading Status loading saat deteksi sedang berlangsung.
- * @property sessionLabel Label sesi makan yang dipilih (mis. "Sarapan").
+ * @property selectedBitmap The analyzed image Bitmap.
+ * @property detectedItems The list of detected and grouped food items.
+ * @property totalCalories The total calories of all detected items.
+ * @property isLoading The loading status while detection is in progress.
+ * @property sessionLabel The selected meal session label (e.g., "Sarapan").
  */
 data class DetectionUiState(
     val selectedBitmap: Bitmap? = null,
     val detectedItems: List<DetectedFoodItem> = emptyList(),
     val totalCalories: Int = 0,
     val isLoading: Boolean = false,
-    val sessionLabel: String = "Sarapan"
+    val sessionLabel: String = ""
 )
 
 /**
- * UI State khusus untuk deteksi real-time dari kamera.
+ * UI State specifically for real-time camera detection.
  *
- * @property rawDetections Hasil deteksi mentah untuk menggambar bounding box.
- * @property groupedItems Hasil deteksi yang sudah dikelompokkan dan siap ditampilkan di UI.
- * @property totalLockedCalories Jumlah kalori dari item yang sudah dikunci oleh pengguna.
- * @property isConfirmEnabled Menentukan apakah tombol konfirmasi bisa diklik.
- * @property sourceBitmapWidth Lebar bitmap asli yang dianalisis, untuk kalkulasi skala.
- * @property sourceBitmapHeight Tinggi bitmap asli yang dianalisis, untuk kalkulasi skala.
+ * @property rawDetections Raw detection results for drawing bounding boxes.
+ * @property groupedItems Grouped detection results ready for UI display.
+ * @property totalLockedCalories The sum of calories from user-locked items.
+ * @property isConfirmEnabled Determines if the confirm button is clickable.
+ * @property sourceBitmapWidth The width of the original analyzed bitmap, for scaling calculations.
+ * @property sourceBitmapHeight The height of the original analyzed bitmap, for scaling calculations.
  */
 data class RealtimeUiState(
     val rawDetections: List<DetectionResult> = emptyList(),
@@ -73,12 +74,12 @@ data class RealtimeUiState(
 )
 
 /**
- * ViewModel yang bertanggung jawab atas semua logika di alur deteksi makanan.
- * Mengelola state untuk deteksi real-time dan hasil deteksi gambar tunggal.
+ * ViewModel responsible for all logic in the food detection flow.
+ * Manages state for both real-time detection and single-image detection results.
  *
- * @param application Konteks aplikasi.
- * @param nutritionRepository Repository untuk mendapatkan data nutrisi makanan.
- * @param historyRepository Repository untuk menyimpan hasil deteksi ke riwayat.
+ * @param application The application context.
+ * @param nutritionRepository Repository to get food nutrition data.
+ * @param historyRepository Repository to save detection results to history.
  */
 class DetectionViewModel(
     application: Application,
@@ -98,25 +99,30 @@ class DetectionViewModel(
     private val foodDetector = FoodDetector(application)
     private val nutritionData: Map<String, FoodNutrition> = nutritionRepository.nutritionData
 
+    // PERFORMANCE OPTIMIZATION: Create a second map for efficient lookup by display name.
+    private val nutritionDataByName: Map<String, FoodNutrition> by lazy {
+        nutritionData.values.associateBy { it.nama_tampilan }
+    }
+
     private var lastAnalyzedTimestamp = 0L
     private var currentFrameBitmap: Bitmap? = null
 
     init {
-        // Setel label sesi awal secara otomatis berdasarkan waktu saat ini
+        // Automatically set the initial session label based on the current time.
         _uiState.update { it.copy(sessionLabel = getAutomaticSessionLabel()) }
     }
 
     /**
-     * PERBAIKAN: Fungsi untuk me-reset state deteksi real-time.
-     * Dipanggil setiap kali pengguna masuk ke layar deteksi untuk memulai sesi baru.
+     * Resets the real-time detection state.
+     * Called every time the user enters the detection screen to start a new session.
      */
     fun startNewDetectionSession() {
         _realtimeUiState.value = RealtimeUiState()
     }
 
     /**
-     * Menganalisis frame dari kamera, menjalankan deteksi, dan memperbarui UI state.
-     * Dibatasi untuk berjalan setiap 500ms untuk efisiensi.
+     * Analyzes a frame from the camera, runs detection, and updates the UI state.
+     * Throttled to run every 500ms for efficiency.
      */
     fun analyzeFrame(imageProxy: ImageProxy) {
         val currentTimestamp = System.currentTimeMillis()
@@ -135,7 +141,7 @@ class DetectionViewModel(
     }
 
     /**
-     * Memproses hasil deteksi real-time, mengelompokkannya, dan memperbarui UI state.
+     * Processes real-time detection results, groups them, and updates the UI state.
      */
     private fun processRealtimeDetections(results: List<DetectionResult>, bitmapWidth: Int, bitmapHeight: Int) {
         val lockedItems = _realtimeUiState.value.groupedItems.filter { it.isLocked }
@@ -172,7 +178,7 @@ class DetectionViewModel(
     }
 
     /**
-     * Mengunci atau membuka kunci item makanan dalam daftar deteksi real-time.
+     * Locks or unlocks a food item in the real-time detection list.
      */
     fun toggleLockState(itemToToggle: DetectedFoodItem) {
         _realtimeUiState.update { currentState ->
@@ -190,7 +196,7 @@ class DetectionViewModel(
     }
 
     /**
-     * Mengkonfirmasi item yang terkunci dan menyiapkannya untuk layar hasil.
+     * Confirms the locked items and prepares them for the result screen.
      */
     fun confirmRealtimeDetection() {
         val confirmedItems = _realtimeUiState.value.groupedItems.filter { it.isLocked }
@@ -207,7 +213,7 @@ class DetectionViewModel(
     }
 
     /**
-     * Memproses gambar yang dipilih dari galeri.
+     * Processes an image selected from the gallery.
      */
     fun onImageSelected(bitmap: Bitmap) {
         _uiState.update { it.copy(selectedBitmap = bitmap, isLoading = true, sessionLabel = getAutomaticSessionLabel()) }
@@ -274,9 +280,9 @@ class DetectionViewModel(
                         }
                     )
                     historyRepository.insert(historyEntity)
-                    _events.send("Berhasil disimpan ke riwayat")
+                    _events.send(getApplication<Application>().getString(R.string.save_history_success_message))
                 } else {
-                    _events.send("Gagal menyimpan gambar")
+                    _events.send(getApplication<Application>().getString(R.string.save_history_error_message))
                 }
             }
         }
@@ -309,13 +315,13 @@ class DetectionViewModel(
         }
     }
 
-
     fun updatePortion(itemIndex: Int, newPortion: Int) {
         _uiState.update { currentState ->
             val updatedItems = currentState.detectedItems.toMutableList()
             if (itemIndex in updatedItems.indices) {
                 val oldItem = updatedItems[itemIndex]
-                val foodInfo = nutritionData.values.find { it.nama_tampilan == oldItem.name }
+                // PERFORMANCE OPTIMIZATION: Use the efficient map for lookup.
+                val foodInfo = nutritionDataByName[oldItem.name]
                 if (foodInfo != null) {
                     val newCalories = (foodInfo.kalori_per_100g / 100.0 * newPortion).toInt()
                     updatedItems[itemIndex] = oldItem.copy(
@@ -337,12 +343,13 @@ class DetectionViewModel(
     }
 
     private fun getAutomaticSessionLabel(): String {
+        val context = getApplication<Application>()
         val cal = Calendar.getInstance()
         return when (cal.get(Calendar.HOUR_OF_DAY)) {
-            in 0..10 -> "Sarapan"
-            in 11..15 -> "Makan Siang"
-            in 16..20 -> "Makan Malam"
-            else -> "Camilan"
+            in 0..10 -> context.getString(R.string.session_breakfast)
+            in 11..15 -> context.getString(R.string.session_lunch)
+            in 16..20 -> context.getString(R.string.session_dinner)
+            else -> context.getString(R.string.session_snack)
         }
     }
 

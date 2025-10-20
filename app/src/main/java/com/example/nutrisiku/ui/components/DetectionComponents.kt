@@ -1,5 +1,7 @@
-package com.example.nutrisiku.ui.screen.components
+package com.example.nutrisiku.ui.components
 
+import android.graphics.Paint
+import android.graphics.Rect
 import androidx.camera.core.ImageProxy
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Canvas
@@ -152,16 +154,16 @@ fun OverlayCanvas(
 
             drawContext.canvas.nativeCanvas.apply {
                 val text = "${result.label} (${"%.2f".format(result.confidence)})"
-                val paint = android.graphics.Paint().apply {
+                val paint = Paint().apply {
                     color = android.graphics.Color.WHITE
                     textSize = 16.sp.toPx()
-                    textAlign = android.graphics.Paint.Align.LEFT
+                    textAlign = Paint.Align.LEFT
                 }
-                val bgPaint = android.graphics.Paint().apply {
+                val bgPaint = Paint().apply {
                     color = android.graphics.Color.RED
-                    style = android.graphics.Paint.Style.FILL
+                    style = Paint.Style.FILL
                 }
-                val textBounds = android.graphics.Rect()
+                val textBounds = Rect()
                 paint.getTextBounds(text, 0, text.length, textBounds)
                 val textBgLeft = scaledLeft
                 val textBgTop = scaledTop - textBounds.height() - 8.dp.toPx()

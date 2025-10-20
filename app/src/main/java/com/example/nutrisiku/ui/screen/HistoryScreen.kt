@@ -24,10 +24,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.nutrisiku.R
 import com.example.nutrisiku.ui.navigation.Screen
-import com.example.nutrisiku.ui.screen.components.DateHeader
-import com.example.nutrisiku.ui.screen.components.EmptyHistoryView
-import com.example.nutrisiku.ui.screen.components.HistoryEntryCard
-import com.example.nutrisiku.ui.screen.components.NutrisiKuBottomNavBar
+import com.example.nutrisiku.ui.components.DateHeader
+import com.example.nutrisiku.ui.components.EmptyHistoryView
+import com.example.nutrisiku.ui.components.HistoryEntryCard
+import com.example.nutrisiku.ui.components.NutrisiKuBottomNavBar
 import com.example.nutrisiku.ui.viewmodel.HistoryViewModel
 import java.text.SimpleDateFormat
 import java.util.Date

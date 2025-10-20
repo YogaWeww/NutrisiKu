@@ -38,7 +38,6 @@ fun NutrisiKuApp(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController()
 ) {
-    // Inisialisasi ViewModelFactory untuk menyediakan dependensi ke semua ViewModel
     val application = LocalContext.current.applicationContext as Application
     val factory = ViewModelFactory(application)
 
@@ -57,7 +56,6 @@ fun NutrisiKuApp(
         }
     }
 
-    // --- PERBAIKAN: DEFINISIKAN AKSI NAVIGASI DI SINI ---
     val navigateToTopLevel: (String) -> Unit = { route ->
         navController.navigate(route) {
             popUpTo(navController.graph.findStartDestination().id) { saveState = true }
@@ -66,11 +64,8 @@ fun NutrisiKuApp(
         }
     }
 
-    // Aksi terpusat untuk navigasi ke layar deteksi
     val navigateToDetection = {
-        // Panggil fungsi untuk membersihkan state sesi sebelumnya
         detectionViewModel.startNewDetectionSession()
-        // Lakukan navigasi
         navController.navigate(Screen.Detection.route)
     }
 
@@ -110,7 +105,7 @@ fun NutrisiKuApp(
                     profileViewModel = profileViewModel,
                     historyViewModel = historyViewModel,
                     navigateToProfile = { navigateToTopLevel(Screen.Profile.route) },
-                    navigateToDetection = navigateToDetection, // Gunakan aksi terpusat
+                    navigateToDetection = navigateToDetection,
                     navigateToHistory = { navigateToTopLevel(Screen.History.route) },
                     navigateToHistoryDetail = { historyId ->
                         navController.navigate(Screen.HistoryDetail.createRoute(historyId))
@@ -125,7 +120,7 @@ fun NutrisiKuApp(
                     onEditProfileClick = { navController.navigate(Screen.EditProfile.route) },
                     onBackClick = { navController.navigateUp() },
                     navigateToHome = { navigateToTopLevel(Screen.Home.route) },
-                    navigateToDetection = navigateToDetection, // Gunakan aksi terpusat
+                    navigateToDetection = navigateToDetection,
                     navigateToHistory = { navigateToTopLevel(Screen.History.route) }
                 )
             }
@@ -138,7 +133,7 @@ fun NutrisiKuApp(
                         navController.navigate(Screen.HistoryDetail.createRoute(historyId))
                     },
                     navigateToHome = { navigateToTopLevel(Screen.Home.route) },
-                    navigateToDetection = navigateToDetection // Gunakan aksi terpusat
+                    navigateToDetection = navigateToDetection
                 )
             }
 
@@ -150,9 +145,6 @@ fun NutrisiKuApp(
                         profileViewModel.saveUserData()
                         navController.navigateUp()
                     },
-                    navigateToHome = { navigateToTopLevel(Screen.Home.route) },
-                    navigateToDetection = navigateToDetection, // Gunakan aksi terpusat
-                    navigateToHistory = { navigateToTopLevel(Screen.History.route) }
                 )
             }
 
@@ -172,7 +164,7 @@ fun NutrisiKuApp(
                         navController.navigate(Screen.EditHistory.createRoute(historyId))
                     },
                     navigateToHome = { navigateToTopLevel(Screen.Home.route) },
-                    navigateToDetection = navigateToDetection, // Gunakan aksi terpusat
+                    navigateToDetection = navigateToDetection,
                     navigateToHistory = { navigateToTopLevel(Screen.History.route) }
                 )
             }

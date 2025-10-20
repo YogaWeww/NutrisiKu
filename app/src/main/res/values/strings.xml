@@ -19,6 +19,8 @@
     <string name="history_detail_image_desc">Gambar detail makanan</string>
     <string name="content_desc_delete_item">Hapus Item Makanan</string>
     <string name="manual_input_image_desc">Gambar makanan yang diinput manual</string>
+    <string name="content_desc_add_photo">Tambah Foto</string>
+
 
     <!-- Buttons -->
     <string name="button_next">Lanjut</string>
@@ -102,6 +104,7 @@
     <string name="delete_food_item_dialog_text">Apakah Anda yakin ingin menghapus item makanan ini?</string>
     <string name="delete_history_dialog_title">Konfirmasi Hapus</string>
     <string name="delete_history_dialog_text">Apakah Anda yakin ingin menghapus riwayat ini? Tindakan ini tidak dapat dibatalkan.</string>
+    <string name="daily_total_calories_label">Total Hari Ini: %d KKAL</string>
 
 
     <!-- Detection Screens -->
@@ -112,24 +115,31 @@
     <string name="camera_permission_denied_message">Izin kamera diperlukan untuk fitur ini.</string>
 
     <!-- Manual Input & Dialogs -->
-    <string name="label_food_name">Nama Makanan</string>
+    <string name="label_food_name">Nama Makanan*</string>
     <string name="label_calories">Jumlah Kalori</string>
     <string name="label_quantity">Jumlah</string>
     <string name="save_as_label">Simpan Sebagai</string>
     <string name="edit_portion_dialog_title">Ubah Porsi (gram)</string>
-    <string name="portion_in_grams_label">Porsi (g)</string>
-    <string name="calories_per_portion_label">Kalori per Porsi</string>
+    <string name="portion_in_grams_label">Porsi (g)*</string>
+    <string name="calories_per_portion_label">Kalori per Porsi*</string>
     <string name="session_breakfast">Sarapan</string>
     <string name="session_lunch">Makan Siang</string>
     <string name="session_dinner">Makan Malam</string>
     <string name="session_snack">Camilan</string>
     <string name="add_photo_optional_label">Tambah Foto (Opsional)</string>
+    <string name="delete_manual_item_dialog_title">Konfirmasi Hapus</string>
+    <string name="delete_manual_item_dialog_text">Apakah Anda yakin ingin menghapus item makanan ini?</string>
 
     <!-- Formats & Units -->
     <string name="kcal_unit">KKAL</string>
     <string name="kcal_value">%d Kkal</string>
     <string name="portion_value_g">%dg</string>
     <string name="portion_per_item_format">(%dg per item)</string>
+
+    <!-- Error & Success Messages -->
+    <string name="save_history_success_message">Berhasil disimpan ke riwayat</string>
+    <string name="save_history_error_message">Gagal menyimpan gambar</string>
+    <string name="error_fill_all_fields">Harap isi semua kolom yang ditandai *</string>
 
 </resources>
 

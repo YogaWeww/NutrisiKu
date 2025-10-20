@@ -65,8 +65,6 @@ class FoodDetector(
         }
     }
 
-    // ... Sisa file tetap sama persis seperti versi terakhir yang berfungsi ...
-
     private fun loadLabels() {
         try {
             context.assets.open(labelPath).use { inputStream ->

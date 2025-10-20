@@ -12,9 +12,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.nutrisiku.R
-import com.example.nutrisiku.ui.screen.components.OnboardingPageContent
-import com.example.nutrisiku.ui.screen.components.PageIndicator
-import com.example.nutrisiku.ui.screen.components.onboardingPages
+import com.example.nutrisiku.ui.components.OnboardingPageContent
+import com.example.nutrisiku.ui.components.PageIndicator
+import com.example.nutrisiku.ui.components.onboardingPages
 import kotlinx.coroutines.launch
 
 /**

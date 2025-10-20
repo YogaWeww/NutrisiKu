@@ -23,9 +23,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.nutrisiku.R
-import com.example.nutrisiku.ui.screen.components.ImagePicker
-import com.example.nutrisiku.ui.screen.components.ManualFoodItemCard
-import com.example.nutrisiku.ui.screen.components.SessionDropdown
+import com.example.nutrisiku.ui.components.ImagePicker
+import com.example.nutrisiku.ui.components.ManualFoodItemCard
+import com.example.nutrisiku.ui.components.SessionDropdown
 import com.example.nutrisiku.ui.viewmodel.ManualInputViewModel
 
 /**

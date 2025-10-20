@@ -1,4 +1,4 @@
-package com.example.nutrisiku.ui.screen.components
+package com.example.nutrisiku.ui.components
 
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image

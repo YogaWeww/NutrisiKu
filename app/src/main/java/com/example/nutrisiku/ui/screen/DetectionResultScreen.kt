@@ -35,10 +35,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.nutrisiku.R
-import com.example.nutrisiku.ui.screen.components.FoodItemResultCard
-import com.example.nutrisiku.ui.screen.components.ImageResult
-import com.example.nutrisiku.ui.screen.components.PortionEditDialog
-import com.example.nutrisiku.ui.screen.components.SessionDropdown
+import com.example.nutrisiku.ui.components.FoodItemResultCard
+import com.example.nutrisiku.ui.components.ImageResult
+import com.example.nutrisiku.ui.components.PortionEditDialog
+import com.example.nutrisiku.ui.components.SessionDropdown
 import com.example.nutrisiku.ui.viewmodel.DetectedFoodItem
 import com.example.nutrisiku.ui.viewmodel.DetectionViewModel
 

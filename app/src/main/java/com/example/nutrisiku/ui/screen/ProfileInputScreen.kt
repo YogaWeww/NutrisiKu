@@ -32,8 +32,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.nutrisiku.R
-import com.example.nutrisiku.ui.screen.components.ActivityLevelDropdown
-import com.example.nutrisiku.ui.screen.components.GenderDropdown
+import com.example.nutrisiku.ui.components.ActivityLevelDropdown
+import com.example.nutrisiku.ui.components.GenderDropdown
 import com.example.nutrisiku.ui.viewmodel.ProfileViewModel
 
 /**
