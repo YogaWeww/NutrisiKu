@@ -191,7 +191,6 @@ fun NutrisiKuApp(
                     onBackClick = { navController.navigateUp() },
                     onManualClick = { navController.navigate(Screen.ManualInput.route) },
                     navigateToResult = {
-                        detectionViewModel.confirmRealtimeDetection()
                         navController.navigate(Screen.DetectionResult.route)
                     }
                 )

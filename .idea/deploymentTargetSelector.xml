@@ -4,10 +4,10 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2025-10-17T05:34:17.731932200Z">
+        <DropdownSelection timestamp="2025-10-22T01:54:14.806990200Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="PhysicalDevice" identifier="serial=cff5e831" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\yogat\.android\avd\Realme_XT.avd" />
             </handle>
           </Target>
         </DropdownSelection>

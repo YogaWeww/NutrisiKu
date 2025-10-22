@@ -62,12 +62,10 @@ fun DetectionScreen(
     val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
     val realtimeUiState by viewModel.realtimeUiState.collectAsState()
 
-    // Launcher untuk memilih gambar dari galeri.
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri: Uri? ->
             uri?.let {
-                // Konversi URI ke Bitmap. Metode berbeda untuk API level yang berbeda.
                 val bitmap = if (Build.VERSION.SDK_INT < 28) {
                     @Suppress("DEPRECATION")
                     MediaStore.Images.Media.getBitmap(context.contentResolver, it)
@@ -75,14 +73,14 @@ fun DetectionScreen(
                     val source = ImageDecoder.createSource(context.contentResolver, it)
                     ImageDecoder.decodeBitmap(source)
                 }
-                // Kirim bitmap ke ViewModel dan navigasi ke layar hasil.
+                // 1. Kirim bitmap ke ViewModel. State UI akan disiapkan.
                 viewModel.onImageSelected(bitmap.copy(Bitmap.Config.ARGB_8888, true))
+                // 2. Langsung navigasi. Tidak ada konfirmasi real-time yang diperlukan.
                 navigateToResult()
             }
         }
     )
 
-    // Meminta izin kamera saat layar pertama kali ditampilkan.
     LaunchedEffect(Unit) {
         if (!cameraPermissionState.status.isGranted) {
             cameraPermissionState.launchPermissionRequest()
@@ -99,10 +97,12 @@ fun DetectionScreen(
                     }
                 },
                 actions = {
-                    // Tombol konfirmasi hanya aktif jika ada item yang dikunci.
                     IconButton(
                         onClick = {
+                            // PERBAIKAN: Logika konfirmasi HANYA ada di sini.
+                            // 1. Konfirmasi item real-time yang terkunci. State UI akan disiapkan.
                             viewModel.confirmRealtimeDetection()
+                            // 2. Navigasi ke layar hasil.
                             navigateToResult()
                         },
                         enabled = realtimeUiState.isConfirmEnabled
@@ -118,9 +118,7 @@ fun DetectionScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // Tampilkan pratinjau kamera atau pesan penolakan izin.
             if (cameraPermissionState.status.isGranted) {
-                // PERBAIKAN: Panggil RealtimeCameraView dengan parameter yang benar
                 RealtimeCameraView(
                     realtimeUiState = realtimeUiState,
                     onFrameAnalyzed = viewModel::analyzeFrame,
@@ -131,7 +129,6 @@ fun DetectionScreen(
                     onRequestPermission = { cameraPermissionState.launchPermissionRequest() }
                 )
             }
-
             DetectionResultCard(
                 realtimeUiState = realtimeUiState,
                 onLockToggle = viewModel::toggleLockState,

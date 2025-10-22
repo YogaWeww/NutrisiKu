@@ -4,6 +4,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.RectF
 import android.util.Log
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.support.common.FileUtil
@@ -20,6 +22,7 @@ import kotlin.math.min
 
 /**
  * Kelas untuk mendeteksi objek makanan dalam gambar menggunakan model TensorFlow Lite.
+ * Kelas ini thread-safe untuk melindungi interpreter TFLite.
  *
  * @param context Konteks aplikasi.
  * @param modelPath Path ke file model .tflite di folder assets.
@@ -39,6 +42,9 @@ class FoodDetector(
     private var modelInputWidth: Int = 0
     private var modelInputHeight: Int = 0
 
+    // PERBAIKAN: Tambahkan Mutex untuk melindungi akses ke interpreter
+    private val interpreterMutex = Mutex()
+
     init {
         setupInterpreter()
         loadLabels()
@@ -47,10 +53,7 @@ class FoodDetector(
     private fun setupInterpreter() {
         try {
             val options = Interpreter.Options().apply {
-                // PERBAIKAN FINAL: Secara eksplisit mengatur jumlah thread CPU.
-                // Ini memberikan stabilitas maksimum pada emulator dan berbagai perangkat.
                 setNumThreads(4)
-                // Ini memaksa TFLite untuk menggunakan CPU dan menghindari bug NNAPI di emulator x86.
                 setUseNNAPI(false)
             }
             val modelBuffer = FileUtil.loadMappedFile(context, modelPath)
@@ -77,7 +80,12 @@ class FoodDetector(
         }
     }
 
-    fun detect(bitmap: Bitmap): List<DetectionResult> {
+    /**
+     * Mendeteksi objek makanan dalam bitmap. Fungsi ini adalah suspend function
+     * dan thread-safe.
+     */
+    // PERBAIKAN: Jadikan fungsi ini 'suspend' agar bisa menggunakan Mutex
+    suspend fun detect(bitmap: Bitmap): List<DetectionResult> {
         if (interpreter == null || labels.isEmpty()) {
             return emptyList()
         }
@@ -98,7 +106,11 @@ class FoodDetector(
         val outputShape = outputTensor?.shape() ?: return emptyList()
         val outputBuffer = TensorBuffer.createFixedSize(outputShape, DataType.FLOAT32)
 
-        interpreter?.run(processedImage.buffer, outputBuffer.buffer.rewind())
+        // PERBAIKAN: Gunakan Mutex untuk memastikan hanya satu thread yang bisa
+        // menjalankan inferensi pada satu waktu.
+        interpreterMutex.withLock {
+            interpreter?.run(processedImage.buffer, outputBuffer.buffer.rewind())
+        }
 
         return postProcess(outputBuffer, originalWidth, originalHeight)
     }
@@ -138,10 +150,8 @@ class FoodDetector(
 
             if (maxScore > scoreThreshold && bestClassIndex != -1) {
                 val label = labels[bestClassIndex]
-
                 val scaleX = originalWidth.toFloat() / modelInputWidth
                 val scaleY = originalHeight.toFloat() / modelInputHeight
-
                 val left = (x - w / 2) * scaleX
                 val top = (y - h / 2) * scaleY
                 val right = (x + w / 2) * scaleX
