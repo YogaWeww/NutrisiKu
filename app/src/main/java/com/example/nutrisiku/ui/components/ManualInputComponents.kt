@@ -56,7 +56,7 @@ fun ManualFoodItemCard(
                     Icon(
                         Icons.Default.Close,
                         contentDescription = stringResource(R.string.content_desc_delete_item),
-                        tint = MaterialTheme.colorScheme.error
+                        tint = MaterialTheme.colorScheme.secondary
                     )
                 }
             }

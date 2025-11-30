@@ -10,9 +10,7 @@ import com.example.nutrisiku.data.HistoryFoodItem
 import com.example.nutrisiku.data.HistoryRepository
 import com.example.nutrisiku.data.FoodNutrition
 import com.example.nutrisiku.data.NutritionRepository
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.* // Pastikan semua impor flow ada
 import kotlinx.coroutines.launch
 
 /**
@@ -33,8 +31,13 @@ class HistoryDetailViewModel(
 
     private val historyId: Int = savedStateHandle.get<Int>("historyId") ?: -1
 
+    // State internal untuk detail riwayat
     private val _historyDetail = MutableStateFlow<HistoryEntity?>(null)
-    val historyDetail = _historyDetail.asStateFlow()
+    val historyDetail: StateFlow<HistoryEntity?> = _historyDetail.asStateFlow()
+
+    // State untuk menandakan perubahan yang belum disimpan
+    private val _hasUnsavedChanges = MutableStateFlow(false)
+    val hasUnsavedChanges: StateFlow<Boolean> = _hasUnsavedChanges.asStateFlow()
 
     private val nutritionData: Map<String, FoodNutrition> by lazy {
         nutritionRepository.nutritionData
@@ -44,21 +47,49 @@ class HistoryDetailViewModel(
         nutritionData.values.associateBy { it.nama_tampilan }
     }
 
+    // Simpan data asli saat pertama kali dimuat untuk perbandingan
+    private var originalHistoryEntity: HistoryEntity? = null
+
     init {
         if (historyId != -1) {
             viewModelScope.launch {
-                historyRepository.getHistoryById(historyId).collect { entity ->
-                    _historyDetail.value = entity
-                }
+                historyRepository.getHistoryById(historyId)
+                    .filterNotNull() // Hanya proses jika data tidak null
+                    .collect { entity ->
+                        _historyDetail.value = entity
+                        // Simpan data asli saat pertama kali dimuat
+                        if (originalHistoryEntity == null) {
+                            originalHistoryEntity = entity.copy() // Buat salinan
+                        }
+                        // Reset flag perubahan saat data baru dari repo masuk
+                        _hasUnsavedChanges.value = false
+                    }
             }
         }
     }
 
+    // Fungsi helper untuk menandai ada perubahan
+    private fun setHasUnsavedChanges() {
+        if (!_hasUnsavedChanges.value) {
+            _hasUnsavedChanges.value = true
+        }
+    }
+
     /**
-     * Fungsi helper privat untuk memodifikasi daftar item makanan dan menghitung ulang total kalori.
-     * Ini mengurangi duplikasi kode di fungsi-fungsi handler event.
-     *
-     * @param action Lambda yang berisi logika modifikasi pada daftar item makanan.
+     * Membuang perubahan yang belum disimpan dengan memuat ulang data dari repository.
+     */
+    fun discardChanges() {
+        // Cukup setel state detail kembali ke data asli yang disimpan
+        originalHistoryEntity?.let {
+            _historyDetail.value = it.copy() // Kembalikan ke salinan asli
+            _hasUnsavedChanges.value = false // Reset flag
+        }
+    }
+
+
+    /**
+     * Fungsi helper privat untuk memodifikasi daftar item makanan, menghitung ulang total kalori,
+     * dan menandai adanya perubahan.
      */
     private fun updateFoodItemsAndRecalculate(action: (MutableList<HistoryFoodItem>) -> Unit) {
         _historyDetail.update { currentDetail ->
@@ -69,13 +100,11 @@ class HistoryDetailViewModel(
                 detail.copy(foodItems = updatedItems, totalCalories = newTotalCalories)
             }
         }
+        // Tandai ada perubahan setelah modifikasi
+        setHasUnsavedChanges()
     }
 
-    /**
-     * Memperbarui nama item makanan pada indeks tertentu.
-     */
     fun onNameChange(itemIndex: Int, newName: String) {
-        // Aksi ini tidak memengaruhi total kalori, jadi bisa ditangani secara terpisah.
         _historyDetail.update { currentDetail ->
             currentDetail?.copy(
                 foodItems = currentDetail.foodItems.mapIndexed { index, item ->
@@ -83,11 +112,9 @@ class HistoryDetailViewModel(
                 }
             )
         }
+        setHasUnsavedChanges()
     }
 
-    /**
-     * Memperbarui porsi item makanan dan menghitung ulang kalorinya.
-     */
     fun onPortionChange(itemIndex: Int, newPortionString: String) {
         updateFoodItemsAndRecalculate { items ->
             if (itemIndex in items.indices) {
@@ -100,9 +127,6 @@ class HistoryDetailViewModel(
         }
     }
 
-    /**
-     * Memperbarui kalori item makanan secara manual.
-     */
     fun onCaloriesChange(itemIndex: Int, newCaloriesString: String) {
         updateFoodItemsAndRecalculate { items ->
             if (itemIndex in items.indices) {
@@ -112,9 +136,6 @@ class HistoryDetailViewModel(
         }
     }
 
-    /**
-     * Memperbarui kuantitas item makanan.
-     */
     fun onQuantityChange(itemIndex: Int, newQuantity: Int) {
         if (newQuantity <= 0) return
         updateFoodItemsAndRecalculate { items ->
@@ -124,9 +145,6 @@ class HistoryDetailViewModel(
         }
     }
 
-    /**
-     * Menghapus item makanan dari daftar.
-     */
     fun onDeleteItem(itemIndex: Int) {
         updateFoodItemsAndRecalculate { items ->
             if (itemIndex in items.indices) {
@@ -135,38 +153,32 @@ class HistoryDetailViewModel(
         }
     }
 
-    /**
-     * Memperbarui label sesi makan.
-     */
     fun onSessionLabelChange(newLabel: String) {
         _historyDetail.update { it?.copy(sessionLabel = newLabel) }
+        setHasUnsavedChanges()
     }
 
-    /**
-     * Menyimpan perubahan ke database. Jika semua item makanan dihapus,
-     * entri riwayat akan dihapus seluruhnya.
-     * @param onComplete Callback yang menginformasikan apakah entri dihapus (true) atau hanya diperbarui (false).
-     */
     fun updateOrDeleteHistory(onComplete: (wasDeleted: Boolean) -> Unit) {
         viewModelScope.launch {
             _historyDetail.value?.let { detail ->
                 if (detail.foodItems.isEmpty()) {
                     historyRepository.delete(detail)
+                    _hasUnsavedChanges.value = false // Reset flag setelah aksi
                     onComplete(true)
                 } else {
                     historyRepository.update(detail)
+                    originalHistoryEntity = detail.copy() // Update data asli setelah save
+                    _hasUnsavedChanges.value = false // Reset flag setelah aksi
                     onComplete(false)
                 }
             }
         }
     }
 
-    /**
-     * Menghapus seluruh entri riwayat dari database.
-     */
     fun deleteHistory() {
         viewModelScope.launch {
             _historyDetail.value?.let { historyRepository.delete(it) }
+            // Tidak perlu reset flag di sini karena layar akan ditutup
         }
     }
 }

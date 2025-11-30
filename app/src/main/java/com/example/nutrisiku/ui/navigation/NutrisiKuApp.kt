@@ -1,6 +1,13 @@
 package com.example.nutrisiku.ui
 
 import android.app.Application
+// --- PENAMBAHAN: Impor untuk animasi ---
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+// --- Akhir Penambahan ---
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -26,7 +33,7 @@ import kotlinx.coroutines.flow.collectLatest
 /**
  * Komponen root untuk seluruh aplikasi NutrisiKu.
  * Bertanggung jawab untuk inisialisasi ViewModel, pengaturan Navigasi Jetpack,
- * dan menangani event global seperti Snackbar.
+ * menangani event global seperti Snackbar, dan menambahkan animasi transisi antar layar.
  *
  * @param startDestination Rute awal yang akan ditampilkan saat aplikasi pertama kali dibuka.
  * @param modifier Modifier untuk diterapkan pada komponen root.
@@ -41,7 +48,6 @@ fun NutrisiKuApp(
     val application = LocalContext.current.applicationContext as Application
     val factory = ViewModelFactory(application)
 
-    // Inisialisasi semua ViewModel yang akan digunakan di seluruh aplikasi
     val mainViewModel: MainViewModel = viewModel(factory = factory)
     val profileViewModel: ProfileViewModel = viewModel(factory = factory)
     val historyViewModel: HistoryViewModel = viewModel(factory = factory)
@@ -58,7 +64,9 @@ fun NutrisiKuApp(
 
     val navigateToTopLevel: (String) -> Unit = { route ->
         navController.navigate(route) {
-            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+            popUpTo(navController.graph.findStartDestination().id) {
+                saveState = true
+            }
             launchSingleTop = true
             restoreState = true
         }
@@ -77,7 +85,21 @@ fun NutrisiKuApp(
             startDestination = startDestination,
             modifier = modifier.padding(innerPadding)
         ) {
-            composable(Screen.Onboarding.route) {
+            // --- PENAMBAHAN ANIMASI UNTUK SETIAP LAYAR ---
+            val enterFade = fadeIn(animationSpec = tween(300))
+            val exitFade = fadeOut(animationSpec = tween(300))
+            // Contoh animasi slide untuk layar detail (opsional)
+            val enterSlide = slideInHorizontally(initialOffsetX = { 1000 }, animationSpec = tween(300))
+            val exitSlide = slideOutHorizontally(targetOffsetX = { -1000 }, animationSpec = tween(300))
+            val popEnterSlide = slideInHorizontally(initialOffsetX = { -1000 }, animationSpec = tween(300))
+            val popExitSlide = slideOutHorizontally(targetOffsetX = { 1000 }, animationSpec = tween(300))
+
+
+            composable(
+                Screen.Onboarding.route,
+                enterTransition = { enterFade },
+                exitTransition = { exitFade }
+            ) {
                 OnboardingScreen(
                     onFinishClick = {
                         mainViewModel.setOnboardingCompleted()
@@ -88,7 +110,11 @@ fun NutrisiKuApp(
                 )
             }
 
-            composable(Screen.ProfileInput.route) {
+            composable(
+                Screen.ProfileInput.route,
+                enterTransition = { enterFade },
+                exitTransition = { exitFade }
+            ) {
                 ProfileInputScreen(
                     viewModel = profileViewModel,
                     onConfirmClick = {
@@ -100,7 +126,11 @@ fun NutrisiKuApp(
                 )
             }
 
-            composable(Screen.Home.route) {
+            composable(
+                Screen.Home.route,
+                enterTransition = { enterFade },
+                exitTransition = { exitFade }
+            ) {
                 HomeScreen(
                     profileViewModel = profileViewModel,
                     historyViewModel = historyViewModel,
@@ -113,22 +143,30 @@ fun NutrisiKuApp(
                 )
             }
 
-            composable(Screen.Profile.route) {
+            composable(
+                Screen.Profile.route,
+                enterTransition = { enterFade },
+                exitTransition = { exitFade }
+            ) {
                 ProfileScreen(
                     profileViewModel = profileViewModel,
                     historyViewModel = historyViewModel,
                     onEditProfileClick = { navController.navigate(Screen.EditProfile.route) },
-                    onBackClick = { navController.navigateUp() },
+                    onBackClick = { navigateToTopLevel(Screen.Home.route) }, // Kembali ke Home
                     navigateToHome = { navigateToTopLevel(Screen.Home.route) },
                     navigateToDetection = navigateToDetection,
                     navigateToHistory = { navigateToTopLevel(Screen.History.route) }
                 )
             }
 
-            composable(Screen.History.route) {
+            composable(
+                Screen.History.route,
+                enterTransition = { enterFade },
+                exitTransition = { exitFade }
+            ) {
                 HistoryScreen(
                     viewModel = historyViewModel,
-                    onBackClick = { navController.navigateUp() },
+                    onBackClick = { navigateToTopLevel(Screen.Home.route) }, // Kembali ke Home
                     onHistoryItemClick = { historyId ->
                         navController.navigate(Screen.HistoryDetail.createRoute(historyId))
                     },
@@ -137,20 +175,31 @@ fun NutrisiKuApp(
                 )
             }
 
-            composable(Screen.EditProfile.route) {
+            // Layar Edit dan Detail menggunakan Slide
+            composable(
+                Screen.EditProfile.route,
+                enterTransition = { enterSlide },
+                exitTransition = { exitSlide },
+                popEnterTransition = { popEnterSlide },
+                popExitTransition = { popExitSlide }
+            ) {
                 EditProfileScreen(
                     viewModel = profileViewModel,
                     onBackClick = { navController.navigateUp() },
                     onSaveClick = {
-                        profileViewModel.saveUserData()
+                        // Logika save dipanggil di dalam EditProfileScreen
                         navController.navigateUp()
-                    },
+                    }
                 )
             }
 
             composable(
                 route = Screen.HistoryDetail.route,
-                arguments = listOf(navArgument("historyId") { type = NavType.IntType })
+                arguments = listOf(navArgument("historyId") { type = NavType.IntType }),
+                enterTransition = { enterSlide },
+                exitTransition = { exitSlide },
+                popEnterTransition = { popEnterSlide },
+                popExitTransition = { popExitSlide }
             ) {
                 val viewModel: HistoryDetailViewModel = viewModel(factory = factory)
                 HistoryDetailScreen(
@@ -171,35 +220,53 @@ fun NutrisiKuApp(
 
             composable(
                 route = Screen.EditHistory.route,
-                arguments = listOf(navArgument("historyId") { type = NavType.IntType })
+                arguments = listOf(navArgument("historyId") { type = NavType.IntType }),
+                enterTransition = { enterSlide },
+                exitTransition = { exitSlide },
+                popEnterTransition = { popEnterSlide },
+                popExitTransition = { popExitSlide }
             ) {
                 val viewModel: HistoryDetailViewModel = viewModel(factory = factory)
                 EditHistoryScreen(
                     viewModel = viewModel,
                     onBackClick = { navController.navigateUp() },
                     onSaveClick = {
-                        viewModel.updateOrDeleteHistory {
-                            navController.popBackStack(Screen.History.route, inclusive = false)
+                        viewModel.updateOrDeleteHistory { wasDeleted ->
+                            if (wasDeleted) {
+                                navController.popBackStack(Screen.History.route, inclusive = false)
+                            } else {
+                                navController.navigateUp()
+                            }
                         }
                     }
                 )
             }
 
-            composable(Screen.Detection.route) {
+            // Layar Deteksi dan turunannya kembali menggunakan Fade
+            composable(
+                Screen.Detection.route,
+                enterTransition = { enterFade },
+                exitTransition = { exitFade }
+            ) {
                 DetectionScreen(
                     viewModel = detectionViewModel,
-                    onBackClick = { navController.navigateUp() },
+                    onBackClick = { navigateToTopLevel(Screen.Home.route) }, // Kembali ke Home
                     onManualClick = { navController.navigate(Screen.ManualInput.route) },
                     navigateToResult = {
+                        // confirmRealtimeDetection dipanggil di dalam DetectionScreen onClick
                         navController.navigate(Screen.DetectionResult.route)
                     }
                 )
             }
 
-            composable(Screen.DetectionResult.route) {
+            composable(
+                Screen.DetectionResult.route,
+                enterTransition = { enterFade },
+                exitTransition = { exitFade }
+            ) {
                 DetectionResultScreen(
                     viewModel = detectionViewModel,
-                    onBackClick = { navController.navigateUp() },
+                    onBackClick = { navController.navigateUp() }, // Kembali ke Detection
                     onSaveClick = {
                         detectionViewModel.saveDetectionToHistory()
                         navController.navigate(Screen.Home.route) {
@@ -209,15 +276,16 @@ fun NutrisiKuApp(
                 )
             }
 
-            composable(Screen.ManualInput.route) {
+            composable(
+                Screen.ManualInput.route,
+                enterTransition = { enterFade },
+                exitTransition = { exitFade }
+            ) {
                 ManualInputScreen(
                     viewModel = manualInputViewModel,
-                    onBackClick = {
-                        manualInputViewModel.clearState()
-                        navController.navigateUp()
-                    },
+                    onBackClick = { navController.navigateUp() }, // Kembali ke Detection
                     onSaveSuccess = {
-                        manualInputViewModel.clearState()
+                        // State direset di ViewModel
                         navController.navigate(Screen.Home.route) {
                             popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
                         }

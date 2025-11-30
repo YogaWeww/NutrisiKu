@@ -5,6 +5,7 @@ import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -29,12 +30,13 @@ import com.example.nutrisiku.ui.components.SessionDropdown
 import com.example.nutrisiku.ui.viewmodel.ManualInputViewModel
 
 /**
- * Layar untuk menginput data makanan secara manual.
- * Pengguna dapat menambahkan beberapa item makanan, mengedit detailnya, dan menyimpannya.
+ * Layar untuk memasukkan data makanan secara manual.
+ * Memungkinkan pengguna menambahkan beberapa item makanan, porsi, kalori, dan gambar opsional.
+ * Menangani konfirmasi sebelum keluar jika ada perubahan yang belum disimpan.
  *
- * @param viewModel ViewModel yang mengelola state dan logika untuk input manual.
- * @param onBackClick Aksi yang dipanggil saat tombol kembali ditekan.
- * @param onSaveSuccess Aksi yang dipanggil setelah data berhasil disimpan.
+ * @param viewModel ViewModel yang mengelola state dan logika input manual.
+ * @param onBackClick Aksi untuk kembali ke layar sebelumnya.
+ * @param onSaveSuccess Aksi yang dipanggil setelah penyimpanan berhasil (untuk navigasi).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,8 +48,45 @@ fun ManualInputScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
+    var showDiscardConfirmationDialog by remember { mutableStateOf(false) }
+
+    // State untuk mengelola dialog konfirmasi hapus item
     var itemIndexToDelete by remember { mutableStateOf<Int?>(null) }
 
+    // Tangani penekanan tombol kembali sistem
+    BackHandler(enabled = uiState.hasUnsavedChanges) {
+        showDiscardConfirmationDialog = true
+    }
+
+    // Dialog konfirmasi jika ada perubahan belum disimpan
+    if (showDiscardConfirmationDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiscardConfirmationDialog = false },
+            title = { Text(stringResource(R.string.discard_changes_dialog_title)) },
+            text = { Text(stringResource(R.string.discard_changes_dialog_text)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.discardChanges() // Panggil discard di ViewModel
+                        showDiscardConfirmationDialog = false
+                        onBackClick() // Lanjutkan navigasi kembali
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.secondary)
+                ) {
+                    Text(stringResource(R.string.button_discard))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardConfirmationDialog = false }) {
+                    Text(stringResource(R.string.button_cancel))
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    }
+
+
+    // Launcher untuk memilih gambar dari galeri
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri: Uri? ->
@@ -64,7 +103,7 @@ fun ManualInputScreen(
         }
     )
 
-    // Dialog konfirmasi hapus item
+    // Dialog konfirmasi hapus item makanan
     if (itemIndexToDelete != null) {
         AlertDialog(
             onDismissRequest = { itemIndexToDelete = null },
@@ -76,7 +115,7 @@ fun ManualInputScreen(
                         itemIndexToDelete?.let { viewModel.removeFoodItem(it) }
                         itemIndexToDelete = null
                     },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.secondary)
                 ) {
                     Text(stringResource(R.string.button_delete))
                 }
@@ -90,7 +129,8 @@ fun ManualInputScreen(
         )
     }
 
-    // Efek untuk menampilkan Snackbar saat ada pesan error
+
+    // Tampilkan Snackbar jika ada pesan error
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let {
             snackbarHostState.showSnackbar(it)
@@ -98,10 +138,12 @@ fun ManualInputScreen(
         }
     }
 
-    // Efek untuk memicu navigasi saat penyimpanan berhasil
+    // Panggil onSaveSuccess jika penyimpanan berhasil
     LaunchedEffect(uiState.isSaveSuccess) {
         if (uiState.isSaveSuccess) {
             onSaveSuccess()
+            // Reset flag isSaveSuccess di ViewModel (opsional, tergantung alur navigasi)
+            // viewModel.resetSaveSuccessFlag() // Jika diperlukan
         }
     }
 
@@ -111,18 +153,26 @@ fun ManualInputScreen(
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.manual_input_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(onClick = {
+                        // Cek perubahan sebelum navigasi kembali via ikon
+                        if (uiState.hasUnsavedChanges) {
+                            showDiscardConfirmationDialog = true
+                        } else {
+                            onBackClick()
+                        }
+                    }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.content_desc_back))
                     }
                 }
             )
         },
         bottomBar = {
-            // Tombol-tombol aksi di bagian bawah layar
+            // Tombol "Tambah Makanan" dan "Simpan"
             Column(modifier = Modifier.padding(16.dp)) {
-                OutlinedButton(
+                OutlinedButton( // Ubah menjadi OutlinedButton agar beda dari Simpan
                     onClick = { viewModel.addFoodItem() },
                     modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp) // Samakan bentuk
                 ) {
                     Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_other_food_button))
                     Spacer(modifier = Modifier.width(8.dp))
@@ -130,7 +180,7 @@ fun ManualInputScreen(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
-                    onClick = { viewModel.saveManualEntry() },
+                    onClick = { viewModel.saveManualEntry() }, // Panggil fungsi save di ViewModel
                     enabled = uiState.isSaveButtonEnabled,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -145,11 +195,13 @@ fun ManualInputScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp),
+                .padding(innerPadding)
+                .padding(horizontal = 16.dp),
+            contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp), // Beri padding bawah
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Pemilih gambar
             item {
                 ImagePicker(
                     bitmap = uiState.selectedBitmap,
@@ -157,7 +209,8 @@ fun ManualInputScreen(
                 )
             }
 
-            itemsIndexed(uiState.foodItems) { index, item ->
+            // Daftar kartu item makanan
+            itemsIndexed(uiState.foodItems, key = { _, item -> item.id }) { index, item ->
                 ManualFoodItemCard(
                     item = item,
                     onItemChange = { updatedItem -> viewModel.onFoodItemChange(index, updatedItem) },
@@ -166,6 +219,7 @@ fun ManualInputScreen(
                 )
             }
 
+            // Dropdown sesi makan
             item {
                 SessionDropdown(
                     selectedSession = uiState.sessionLabel,
@@ -173,6 +227,10 @@ fun ManualInputScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
+
+            // Spacer di akhir untuk memastikan tidak tertutup bottom bar
+            item { Spacer(modifier = Modifier.height(100.dp)) }
         }
     }
 }
+

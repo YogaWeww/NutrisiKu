@@ -141,7 +141,7 @@ fun GenderDropdown(
 }
 
 /**
- * Dropdown untuk memilih tingkat aktivitas harian.
+ * Dropdown untuk memilih tingkat aktivitas harian, dengan dialog informasi tambahan.
  *
  * @param selectedActivity Tingkat aktivitas yang saat ini dipilih.
  * @param onActivitySelected Lambda yang dipanggil dengan tingkat aktivitas baru saat dipilih.
@@ -153,6 +153,9 @@ fun ActivityLevelDropdown(
     onActivitySelected: (String) -> Unit
 ) {
     var isExpanded by remember { mutableStateOf(false) }
+    // State untuk mengontrol visibilitas dialog info
+    var showInfoDialog by remember { mutableStateOf(false) }
+
     val activityOptions = listOf(
         stringResource(R.string.activity_level_1),
         stringResource(R.string.activity_level_2),
@@ -160,6 +163,29 @@ fun ActivityLevelDropdown(
         stringResource(R.string.activity_level_4),
         stringResource(R.string.activity_level_5)
     )
+
+    // Dialog Info Aktivitas
+    if (showInfoDialog) {
+        AlertDialog(
+            onDismissRequest = { showInfoDialog = false },
+            title = { Text(stringResource(R.string.activity_level_info_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.activity_level_1_desc))
+                    Text(stringResource(R.string.activity_level_2_desc))
+                    Text(stringResource(R.string.activity_level_3_desc))
+                    Text(stringResource(R.string.activity_level_4_desc))
+                    Text(stringResource(R.string.activity_level_5_desc))
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showInfoDialog = false }) {
+                    Text(stringResource(R.string.dialog_close_button))
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    }
 
     ExposedDropdownMenuBox(
         expanded = isExpanded,
@@ -171,7 +197,17 @@ fun ActivityLevelDropdown(
             readOnly = true,
             label = { Text(stringResource(R.string.label_activity_level)) },
             leadingIcon = { Icon(Icons.AutoMirrored.Filled.DirectionsRun, contentDescription = null) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded) },
+            // PERUBAHAN: Tambahkan ikon Info di trailingIcon
+            trailingIcon = {
+                Row {
+                    // Ikon Info untuk membuka dialog
+                    IconButton(onClick = { showInfoDialog = true }) {
+                        Icon(Icons.Default.Info, contentDescription = stringResource(R.string.content_desc_activity_info))
+                    }
+                    // Ikon Dropdown bawaan
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded)
+                }
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .menuAnchor()

@@ -83,7 +83,10 @@ fun ProfileScreen(
 
     // Bottom sheet untuk opsi ganti/hapus foto profil
     if (uiState.showProfileImageOptions) {
-        ModalBottomSheet(onDismissRequest = profileViewModel::onDismissProfileImageOptions) {
+        ModalBottomSheet(
+            onDismissRequest = profileViewModel::onDismissProfileImageOptions,
+            containerColor = MaterialTheme.colorScheme.surface)
+        {
             Column(modifier = Modifier.padding(bottom = 32.dp)) {
                 // Opsi "Ubah foto"
                 ListItem(
@@ -97,8 +100,8 @@ fun ProfileScreen(
                 // Opsi "Hapus foto" (hanya jika ada foto)
                 if (uiState.imagePath.isNotEmpty()) {
                     ListItem(
-                        headlineContent = { Text(stringResource(R.string.delete_profile_photo_option), color = MaterialTheme.colorScheme.error) },
-                        leadingContent = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                        headlineContent = { Text(stringResource(R.string.delete_profile_photo_option), color = MaterialTheme.colorScheme.secondary) },
+                        leadingContent = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.secondary) },
                         modifier = Modifier.clickable {
                             profileViewModel.onDeleteProfileImage()
                         }

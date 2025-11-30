@@ -34,7 +34,7 @@ class FoodDetector(
     private val context: Context,
     private val modelPath: String = "best_model.tflite",
     private val labelPath: String = "labels.txt",
-    private val scoreThreshold: Float = 0.5f,
+    private val scoreThreshold: Float = 0.8f,
     private val maxResults: Int = 5
 ) {
     private var interpreter: Interpreter? = null

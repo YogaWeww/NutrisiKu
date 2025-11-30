@@ -1,37 +1,14 @@
 package com.example.nutrisiku.ui.screen
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -43,24 +20,61 @@ import com.example.nutrisiku.ui.components.SessionDropdown
 import com.example.nutrisiku.ui.viewmodel.HistoryDetailViewModel
 
 /**
- * Layar yang memungkinkan pengguna untuk mengedit entri riwayat makanan yang sudah ada.
- * Pengguna dapat mengubah sesi makan, nama item, porsi, kalori, kuantitas, dan menghapus item.
+ * Layar untuk mengedit detail entri riwayat makanan.
+ * Memungkinkan pengguna mengubah sesi, nama makanan, porsi, kalori, kuantitas,
+ * dan menghapus item makanan.
+ * Menangani konfirmasi sebelum keluar jika ada perubahan yang belum disimpan.
  *
  * @param viewModel ViewModel yang menyediakan state dan logika untuk detail riwayat.
- * @param onBackClick Aksi yang dipanggil saat tombol kembali ditekan.
- * @param onSaveClick Aksi yang dipanggil saat tombol simpan (FAB) ditekan.
+ * @param onBackClick Aksi untuk kembali ke layar sebelumnya.
+ * @param onSaveClick Aksi yang dipanggil saat tombol simpan ditekan.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditHistoryScreen(
     viewModel: HistoryDetailViewModel,
     onBackClick: () -> Unit,
-    onSaveClick: () -> Unit
+    onSaveClick: () -> Unit // Tetap dipanggil dari FAB
 ) {
     val historyDetail by viewModel.historyDetail.collectAsState()
+    val hasUnsavedChanges by viewModel.hasUnsavedChanges.collectAsState()
+    var showDiscardConfirmationDialog by remember { mutableStateOf(false) }
     var itemIndexToDelete by remember { mutableStateOf<Int?>(null) }
 
-    // Dialog konfirmasi penghapusan item
+    // Tangani penekanan tombol kembali sistem
+    BackHandler(enabled = hasUnsavedChanges) {
+        showDiscardConfirmationDialog = true
+    }
+
+    // Dialog konfirmasi buang perubahan
+    if (showDiscardConfirmationDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiscardConfirmationDialog = false },
+            title = { Text(stringResource(R.string.discard_changes_dialog_title)) },
+            text = { Text(stringResource(R.string.discard_changes_dialog_text)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.discardChanges() // Panggil discard di ViewModel
+                        showDiscardConfirmationDialog = false
+                        onBackClick() // Lanjutkan navigasi kembali
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.secondary)
+                ) {
+                    Text(stringResource(R.string.button_discard))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardConfirmationDialog = false }) {
+                    Text(stringResource(R.string.button_cancel))
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    }
+
+
+    // Dialog konfirmasi hapus item makanan
     if (itemIndexToDelete != null) {
         AlertDialog(
             onDismissRequest = { itemIndexToDelete = null },
@@ -72,7 +86,7 @@ fun EditHistoryScreen(
                         itemIndexToDelete?.let { viewModel.onDeleteItem(it) }
                         itemIndexToDelete = null
                     },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.secondary)
                 ) {
                     Text(stringResource(R.string.button_delete))
                 }
@@ -91,7 +105,14 @@ fun EditHistoryScreen(
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.edit_history_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(onClick = {
+                        // Cek perubahan sebelum navigasi kembali via ikon
+                        if (hasUnsavedChanges) {
+                            showDiscardConfirmationDialog = true
+                        } else {
+                            onBackClick()
+                        }
+                    }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.content_desc_back))
                     }
                 }
@@ -99,17 +120,17 @@ fun EditHistoryScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = onSaveClick,
-                containerColor = MaterialTheme.colorScheme.primary
+                onClick = onSaveClick, // onSaveClick akan memanggil updateOrDeleteHistory di NavHost
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
-                Icon(Icons.Default.Check, contentDescription = stringResource(R.string.button_save), tint = MaterialTheme.colorScheme.onPrimary)
+                Icon(Icons.Default.Check, contentDescription = stringResource(R.string.button_save))
             }
         }
     ) { innerPadding ->
         val detail = historyDetail
         if (detail == null) {
-            // Tampilkan loading indicator jika data belum siap
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         } else {
@@ -118,20 +139,20 @@ fun EditHistoryScreen(
                     .fillMaxSize()
                     .padding(innerPadding),
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp) // Beri jarak antar item
             ) {
-                // Dropdown untuk memilih sesi makan
+                // Dropdown Sesi
                 item {
                     SessionDropdown(
                         selectedSession = detail.sessionLabel,
                         onSessionSelected = viewModel::onSessionLabelChange,
                         modifier = Modifier.fillMaxWidth()
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(8.dp)) // Kurangi spacer
                 }
 
-                // Daftar item makanan yang dapat diedit
-                itemsIndexed(detail.foodItems) { index, foodItem ->
+                // Daftar Item Makanan yang Bisa Diedit
+                itemsIndexed(detail.foodItems, key = { _, item -> item.name + item.portion }) { index, foodItem ->
                     EditableHistoryItem(
                         item = foodItem,
                         onNameChange = { newName -> viewModel.onNameChange(index, newName) },
@@ -140,10 +161,13 @@ fun EditHistoryScreen(
                         onQuantityChange = { newQuantity -> viewModel.onQuantityChange(index, newQuantity) },
                         onDeleteItem = { itemIndexToDelete = index }
                     )
+                    // Jangan tambahkan divider setelah item terakhir
                     if (index < detail.foodItems.lastIndex) {
-                        HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     }
                 }
+                // Spacer di akhir agar tidak tertutup FAB
+                item { Spacer(modifier = Modifier.height(80.dp)) }
             }
         }
     }

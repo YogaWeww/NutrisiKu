@@ -64,7 +64,7 @@ fun HistoryDetailScreen(
                         onDeleteClick()
                         showDeleteDialog = false
                     },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.secondary)
                 ) {
                     Text(stringResource(R.string.button_delete))
                 }

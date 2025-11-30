@@ -19,8 +19,7 @@
     <string name="history_detail_image_desc">Gambar detail makanan</string>
     <string name="content_desc_delete_item">Hapus Item Makanan</string>
     <string name="manual_input_image_desc">Gambar makanan yang diinput manual</string>
-    <string name="content_desc_add_photo">Tambah Foto</string>
-
+    <string name="content_desc_activity_info">Lihat info tingkat aktivitas</string>
 
     <!-- Buttons -->
     <string name="button_next">Lanjut</string>
@@ -39,7 +38,8 @@
     <string name="detect_now_button">Deteksi Sekarang</string>
     <string name="add_other_food_button">Tambah Makanan Lain</string>
     <string name="add_photo_button">Tambah Foto</string>
-
+    <string name="button_discard">Buang</string>
+    <string name="dialog_close_button">Tutup</string>
 
     <!-- Screen Titles -->
     <string name="home_screen_title">Home</string>
@@ -79,11 +79,19 @@
     <string name="profile_input_welcome_title">Selamat Datang</string>
     <string name="profile_input_welcome_subtitle">Silahkan Masukkan Data Diri Anda</string>
     <string name="profile_input_required_fields_note">* Semua kolom wajib diisi untuk melanjutkan.</string>
+    <string name="profile_edit_required_fields_note">* Semua kolom wajib diisi untuk menyimpan.</string> <!-- String Baru -->
     <string name="label_age_years">Umur (Tahun)</string>
     <string name="profile_input_can_change_later_note">Anda dapat mengubah data diri kapan saja.</string>
     <string name="change_profile_photo_option">Ubah foto profil</string>
     <string name="delete_profile_photo_option">Hapus foto profil</string>
-
+    <string name="discard_changes_dialog_title">Buang Perubahan?</string>
+    <string name="discard_changes_dialog_text">Anda memiliki perubahan yang belum disimpan. Apakah Anda yakin ingin keluar?</string>
+    <string name="activity_level_info_title">Informasi Tingkat Aktivitas</string>
+    <string name="activity_level_1_desc"><b>Jarang Olahraga:</b> Sebagian besar duduk (kerja kantoran) dengan sedikit atau tanpa olahraga.</string>
+    <string name="activity_level_2_desc"><b>Aktivitas Ringan:</b> Olahraga ringan 1–3 hari seminggu (jalan kaki, yoga ringan).</string>
+    <string name="activity_level_3_desc"><b>Aktivitas Sedang:</b> Olahraga sedang 3–5 hari seminggu (jogging, bersepeda, berenang).</string>
+    <string name="activity_level_4_desc"><b>Sangat Aktif:</b> Olahraga berat 6–7 hari seminggu (latihan beban intens, lari jarak jauh).</string>
+    <string name="activity_level_5_desc"><b>Ekstra Aktif:</b> Olahraga sangat berat, pekerjaan fisik, atau latihan dua kali sehari (atlet profesional, pekerja konstruksi).</string>
 
     <!-- Home Screen -->
     <string name="home_greeting">Halo, %s!</string>
@@ -104,7 +112,6 @@
     <string name="delete_food_item_dialog_text">Apakah Anda yakin ingin menghapus item makanan ini?</string>
     <string name="delete_history_dialog_title">Konfirmasi Hapus</string>
     <string name="delete_history_dialog_text">Apakah Anda yakin ingin menghapus riwayat ini? Tindakan ini tidak dapat dibatalkan.</string>
-    <string name="daily_total_calories_label">Total Hari Ini: %d KKAL</string>
 
 
     <!-- Detection Screens -->
@@ -116,7 +123,7 @@
 
     <!-- Manual Input & Dialogs -->
     <string name="label_food_name">Nama Makanan*</string>
-    <string name="label_calories">Jumlah Kalori</string>
+    <string name="label_calories">Kalori per Porsi*</string>
     <string name="label_quantity">Jumlah</string>
     <string name="save_as_label">Simpan Sebagai</string>
     <string name="edit_portion_dialog_title">Ubah Porsi (gram)</string>
@@ -127,8 +134,8 @@
     <string name="session_dinner">Makan Malam</string>
     <string name="session_snack">Camilan</string>
     <string name="add_photo_optional_label">Tambah Foto (Opsional)</string>
-    <string name="delete_manual_item_dialog_title">Konfirmasi Hapus</string>
-    <string name="delete_manual_item_dialog_text">Apakah Anda yakin ingin menghapus item makanan ini?</string>
+    <string name="manual_input_error_empty_fields">Semua kolom bertanda * pada setiap makanan wajib diisi.</string>
+
 
     <!-- Formats & Units -->
     <string name="kcal_unit">KKAL</string>
