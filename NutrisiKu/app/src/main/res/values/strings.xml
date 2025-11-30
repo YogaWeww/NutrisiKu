@@ -1,0 +1,135 @@
+<resources>
+    <string name="app_name">NutrisiKu</string>
+
+    <!-- General & Content Descriptions -->
+    <string name="content_desc_back">Kembali</string>
+    <string name="content_desc_edit">Ubah</string>
+    <string name="content_desc_delete">Hapus</string>
+    <string name="content_desc_app_logo">Logo Aplikasi</string>
+    <string name="content_desc_onboarding_image">Gambar Onboarding</string>
+    <string name="content_desc_profile_picture">Foto Profil</string>
+    <string name="content_desc_edit_portion">Ubah Porsi</string>
+    <string name="content_desc_history_image">Gambar riwayat makanan</string>
+    <string name="content_desc_calories">Kalori</string>
+    <string name="content_desc_decrement">Kurangi Jumlah</string>
+    <string name="content_desc_increment">Tambah Jumlah</string>
+    <string name="content_desc_lock">Kunci item ini</string>
+    <string name="content_desc_unlock">Buka kunci item ini</string>
+    <string name="detection_result_image_desc">Gambar hasil deteksi makanan</string>
+    <string name="history_detail_image_desc">Gambar detail makanan</string>
+    <string name="content_desc_delete_item">Hapus Item Makanan</string>
+    <string name="manual_input_image_desc">Gambar makanan yang diinput manual</string>
+
+    <!-- Buttons -->
+    <string name="button_next">Lanjut</string>
+    <string name="button_finish">Selesai</string>
+    <string name="button_confirm">Konfirmasi</string>
+    <string name="button_save">Simpan</string>
+    <string name="button_edit">Ubah</string>
+    <string name="button_edit_profile">Ubah Profil</string>
+    <string name="button_cancel">Batal</string>
+    <string name="button_add">Tambah</string>
+    <string name="button_manual_input">Manual</string>
+    <string name="button_open_camera">Buka Kamera</string>
+    <string name="button_open_gallery">Galeri</string>
+    <string name="grant_permission_button">Berikan Izin</string>
+    <string name="button_delete">Hapus</string>
+    <string name="detect_now_button">Deteksi Sekarang</string>
+    <string name="add_other_food_button">Tambah Makanan Lain</string>
+    <string name="add_photo_button">Tambah Foto</string>
+
+
+    <!-- Screen Titles -->
+    <string name="home_screen_title">Home</string>
+    <string name="detection_screen_title">Deteksi</string>
+    <string name="history_screen_title">Riwayat</string>
+    <string name="profile_title">Profil</string>
+    <string name="edit_profile_title">Ubah Profil</string>
+    <string name="history_detail_title">Detail Riwayat</string>
+    <string name="detection_result_title">Hasil Deteksi</string>
+    <string name="manual_input_title">Input Manual</string>
+    <string name="edit_history_title">Ubah Riwayat</string>
+
+    <!-- Onboarding Screen -->
+    <string name="onboarding_title_1">Selamat Datang di NutrisiKu</string>
+    <string name="onboarding_desc_1">Deteksi kalori makanan Anda dengan mudah hanya dengan satu foto.</string>
+    <string name="onboarding_title_2">Lacak Asupan Harian</string>
+    <string name="onboarding_desc_2">Simpan riwayat makanan dan pantau total kalori harian Anda.</string>
+    <string name="onboarding_title_3">Personalisasi Kebutuhan Anda</string>
+    <string name="onboarding_desc_3">Masukkan data diri untuk mendapatkan rekomendasi kalori yang lebih akurat.</string>
+
+    <!-- Profile Input & Edit Screens -->
+    <string name="profile_input_title">Lengkapi Profil Anda</string>
+    <string name="profile_input_desc">Data ini akan membantu kami memberikan estimasi kebutuhan kalori harian Anda.</string>
+    <string name="label_name">Nama</string>
+    <string name="label_age">Usia</string>
+    <string name="label_weight">Berat Badan (kg)</string>
+    <string name="label_height">Tinggi Badan (cm)</string>
+    <string name="label_gender">Jenis Kelamin</string>
+    <string name="gender_male">Pria</string>
+    <string name="gender_female">Wanita</string>
+    <string name="label_activity_level">Tingkat Aktivitas</string>
+    <string name="activity_level_1">Jarang Olahraga</string>
+    <string name="activity_level_2">Aktivitas Ringan</string>
+    <string name="activity_level_3">Aktivitas Sedang</string>
+    <string name="activity_level_4">Sangat Aktif</string>
+    <string name="activity_level_5">Ekstra Aktif</string>
+    <string name="profile_input_welcome_title">Selamat Datang</string>
+    <string name="profile_input_welcome_subtitle">Silahkan Masukkan Data Diri Anda</string>
+    <string name="profile_input_required_fields_note">* Semua kolom wajib diisi untuk melanjutkan.</string>
+    <string name="label_age_years">Umur (Tahun)</string>
+    <string name="profile_input_can_change_later_note">Anda dapat mengubah data diri kapan saja.</string>
+    <string name="change_profile_photo_option">Ubah foto profil</string>
+    <string name="delete_profile_photo_option">Hapus foto profil</string>
+
+
+    <!-- Home Screen -->
+    <string name="home_greeting">Halo, %s!</string>
+    <string name="home_greeting_default">Halo!</string>
+    <string name="daily_calorie_needs_label">Kebutuhan Kalori Harian:</string>
+    <string name="calorie_needs_met">Kebutuhan kalori harian terpenuhi</string>
+    <string name="calories_remaining_label">%d KKAL TERSISA</string>
+    <string name="home_recent_history">Riwayat Deteksi:</string>
+    <string name="home_view_all">Lihat Semua Riwayat</string>
+    <string name="home_no_history">Belum ada riwayat deteksi.</string>
+    <string name="date_label">Tanggal</string>
+
+    <!-- History Screens -->
+    <string name="history_empty">Riwayat makanan Anda masih kosong. Mulai deteksi untuk menambah riwayat.</string>
+    <string name="history_detail_food_items">Daftar Makanan</string>
+    <string name="total_calories_value">Total: %d KKAL</string>
+    <string name="delete_food_item_dialog_title">Hapus Makanan</string>
+    <string name="delete_food_item_dialog_text">Apakah Anda yakin ingin menghapus item makanan ini?</string>
+    <string name="delete_history_dialog_title">Konfirmasi Hapus</string>
+    <string name="delete_history_dialog_text">Apakah Anda yakin ingin menghapus riwayat ini? Tindakan ini tidak dapat dibatalkan.</string>
+
+
+    <!-- Detection Screens -->
+    <string name="food_details_label">Rincian Makanan:</string>
+    <string name="total_calories_label">Total Kalori:</string>
+    <string name="point_camera_prompt">Arahkan kamera ke makanan Anda...</string>
+    <string name="total_locked_calories_label">Total Kalori Terkunci:</string>
+    <string name="camera_permission_denied_message">Izin kamera diperlukan untuk fitur ini.</string>
+
+    <!-- Manual Input & Dialogs -->
+    <string name="label_food_name">Nama Makanan</string>
+    <string name="label_calories">Jumlah Kalori</string>
+    <string name="label_quantity">Jumlah</string>
+    <string name="save_as_label">Simpan Sebagai</string>
+    <string name="edit_portion_dialog_title">Ubah Porsi (gram)</string>
+    <string name="portion_in_grams_label">Porsi (g)</string>
+    <string name="calories_per_portion_label">Kalori per Porsi</string>
+    <string name="session_breakfast">Sarapan</string>
+    <string name="session_lunch">Makan Siang</string>
+    <string name="session_dinner">Makan Malam</string>
+    <string name="session_snack">Camilan</string>
+    <string name="add_photo_optional_label">Tambah Foto (Opsional)</string>
+
+    <!-- Formats & Units -->
+    <string name="kcal_unit">KKAL</string>
+    <string name="kcal_value">%d Kkal</string>
+    <string name="portion_value_g">%dg</string>
+    <string name="portion_per_item_format">(%dg per item)</string>
+
+</resources>
+

@@ -1,0 +1,183 @@
+[
+  {
+    "label": "Apel",
+    "nama_tampilan": "Apel",
+    "kalori_per_100g": 52,
+    "porsi_standar_g": 180
+  },
+  {
+    "label": "Ayam Krispi",
+    "nama_tampilan": "Ayam Krispi",
+    "kalori_per_100g": 246,
+    "porsi_standar_g": 120
+  },
+  {
+    "label": "Bakwan Jagung",
+    "nama_tampilan": "Bakwan Jagung",
+    "kalori_per_100g": 150,
+    "porsi_standar_g": 50
+  },
+  {
+    "label": "Bihun goreng",
+    "nama_tampilan": "Bihun Goreng",
+    "kalori_per_100g": 192,
+    "porsi_standar_g": 200
+  },
+  {
+    "label": "Bubur",
+    "nama_tampilan": "Bubur Ayam",
+    "kalori_per_100g": 65,
+    "porsi_standar_g": 250
+  },
+  {
+    "label": "Cah Kangkung",
+    "nama_tampilan": "Cah Kangkung",
+    "kalori_per_100g": 98,
+    "porsi_standar_g": 150
+  },
+  {
+    "label": "Durian",
+    "nama_tampilan": "Durian",
+    "kalori_per_100g": 147,
+    "porsi_standar_g": 100
+  },
+  {
+    "label": "Gado-gado",
+    "nama_tampilan": "Gado-gado",
+    "kalori_per_100g": 135,
+    "porsi_standar_g": 300
+  },
+  {
+    "label": "Jeruk",
+    "nama_tampilan": "Jeruk",
+    "kalori_per_100g": 47,
+    "porsi_standar_g": 150
+  },
+  {
+    "label": "Kentang Goreng",
+    "nama_tampilan": "Kentang Goreng",
+    "kalori_per_100g": 312,
+    "porsi_standar_g": 100
+  },
+  {
+    "label": "Kue Borwnies",
+    "nama_tampilan": "Kue Brownies",
+    "kalori_per_100g": 450,
+    "porsi_standar_g": 60
+  },
+  {
+    "label": "Mie Ayam",
+    "nama_tampilan": "Mie Ayam",
+    "kalori_per_100g": 180,
+    "porsi_standar_g": 250
+  },
+  {
+    "label": "Mie Bakso",
+    "nama_tampilan": "Mie Bakso",
+    "kalori_per_100g": 150,
+    "porsi_standar_g": 300
+  },
+  {
+    "label": "Nasi Goreng",
+    "nama_tampilan": "Nasi Goreng",
+    "kalori_per_100g": 170,
+    "porsi_standar_g": 250
+  },
+  {
+    "label": "Nasi Putih",
+    "nama_tampilan": "Nasi Putih",
+    "kalori_per_100g": 130,
+    "porsi_standar_g": 150
+  },
+  {
+    "label": "Nugget Ayam",
+    "nama_tampilan": "Nugget Ayam",
+    "kalori_per_100g": 296,
+    "porsi_standar_g": 80
+  },
+  {
+    "label": "Pepes Ikan",
+    "nama_tampilan": "Pepes Ikan",
+    "kalori_per_100g": 140,
+    "porsi_standar_g": 150
+  },
+  {
+    "label": "Pisang",
+    "nama_tampilan": "Pisang",
+    "kalori_per_100g": 89,
+    "porsi_standar_g": 120
+  },
+  {
+    "label": "Pisang Pasir",
+    "nama_tampilan": "Pisang Goreng Pasir",
+    "kalori_per_100g": 250,
+    "porsi_standar_g": 80
+  },
+  {
+    "label": "Rendang",
+    "nama_tampilan": "Rendang Sapi",
+    "kalori_per_100g": 195,
+    "porsi_standar_g": 100
+  },
+  {
+    "label": "Roti Putih",
+    "nama_tampilan": "Roti Tawar Putih",
+    "kalori_per_100g": 265,
+    "porsi_standar_g": 50
+  },
+  {
+    "label": "Sate ayam",
+    "nama_tampilan": "Sate Ayam",
+    "kalori_per_100g": 165,
+    "porsi_standar_g": 100
+  },
+  {
+    "label": "Semangka",
+    "nama_tampilan": "Semangka",
+    "kalori_per_100g": 30,
+    "porsi_standar_g": 200
+  },
+  {
+    "label": "Soto Ayam",
+    "nama_tampilan": "Soto Ayam",
+    "kalori_per_100g": 90,
+    "porsi_standar_g": 300
+  },
+  {
+    "label": "Tahu Goreng",
+    "nama_tampilan": "Tahu Goreng",
+    "kalori_per_100g": 115,
+    "porsi_standar_g": 80
+  },
+  {
+    "label": "Telur Balado",
+    "nama_tampilan": "Telur Balado",
+    "kalori_per_100g": 155,
+    "porsi_standar_g": 60
+  },
+  {
+    "label": "Telur Ceplok",
+    "nama_tampilan": "Telur Ceplok",
+    "kalori_per_100g": 196,
+    "porsi_standar_g": 50
+  },
+  {
+    "label": "Telur Dadar",
+    "nama_tampilan": "Telur Dadar",
+    "kalori_per_100g": 180,
+    "porsi_standar_g": 60
+  },
+  {
+    "label": "Telur Rebus",
+    "nama_tampilan": "Telur Rebus",
+    "kalori_per_100g": 155,
+    "porsi_standar_g": 50
+  },
+  {
+    "label": "Tempe Goreng",
+    "nama_tampilan": "Tempe Goreng",
+    "kalori_per_100g": 193,
+    "porsi_standar_g": 80
+  }
+]
+
